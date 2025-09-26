@@ -183,7 +183,7 @@ export const searchService = {
 
   async getFeaturedEvents(): Promise<ApiResponse<{ events: any[] }>> {
     try {
-      const response: AxiosResponse<ApiResponse<{ events: any[] }>> = await apiClient.get('/featured-events');
+      const response: AxiosResponse<ApiResponse<{ events: any[] }>> = await apiClient.get('/featured-events-simple');
       return response.data;
     } catch (error: any) {
       return {
