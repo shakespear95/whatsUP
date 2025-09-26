@@ -171,7 +171,7 @@ export const authService = {
 export const searchService = {
   async searchEvents(searchData: SearchFormData): Promise<ApiResponse<SearchResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<SearchResponse>> = await apiClient.post('/search-simple', searchData);
+      const response: AxiosResponse<ApiResponse<SearchResponse>> = await apiClient.post('/search', searchData);
       return response.data;
     } catch (error: any) {
       return {
@@ -183,7 +183,7 @@ export const searchService = {
 
   async getFeaturedEvents(): Promise<ApiResponse<{ events: any[] }>> {
     try {
-      const response: AxiosResponse<ApiResponse<{ events: any[] }>> = await apiClient.get('/featured-events-simple');
+      const response: AxiosResponse<ApiResponse<{ events: any[] }>> = await apiClient.get('/featured-events');
       return response.data;
     } catch (error: any) {
       return {
