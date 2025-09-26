@@ -14,41 +14,15 @@ const apiClient = axios.create({
   timeout: 30000,
 });
 
-// Request interceptor to add auth token
+// Request interceptor (auth removed for now)
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 
-// Response interceptor to handle token refresh
+// Response interceptor (simplified, no auth)
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expired, try to refresh
-      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-      if (refreshToken) {
-        try {
-          const refreshResponse = await authService.refreshToken(refreshToken);
-          if (refreshResponse.success && refreshResponse.data) {
-            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, refreshResponse.data.token);
-
-            // Retry the original request
-            error.config.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
-            return apiClient.request(error.config);
-          } else {
-            throw new Error('Token refresh failed');
-          }
-        } catch (refreshError) {
-          // Refresh failed, logout user
-          authService.logout();
-          window.location.href = '/';
-        }
-      }
-    }
+  (error) => {
     return Promise.reject(error);
   }
 );
