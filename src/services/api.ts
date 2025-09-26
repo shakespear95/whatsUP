@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
 export const authService = {
   async login(email: string, password: string, rememberMe: boolean): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/login', {
+      const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/login-temp', {
         email,
         password,
         rememberMe
@@ -83,7 +83,7 @@ export const authService = {
 
   async signup(name: string, email: string, password: string): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/signup', {
+      const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/signup-temp', {
         name,
         email,
         password
