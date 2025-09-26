@@ -13,7 +13,7 @@ interface LoginModalProps {
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
     rememberMe: false
@@ -33,9 +33,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
     try {
       let result;
       if (isSignUp) {
-        result = await signup(formData.username, formData.email, formData.password);
+        result = await signup(formData.name, formData.email, formData.password);
       } else {
-        result = await login(formData.username, formData.password, formData.rememberMe);
+        result = await login(formData.email, formData.password, formData.rememberMe);
       }
 
       if (result.success) {
@@ -102,29 +102,29 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
             )}
 
             <div className="form-group">
-              <label htmlFor="username">Username</label>
+              <label htmlFor="email">Email</label>
               <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
                 onChange={handleInputChange}
                 required
-                placeholder="Enter your username"
+                placeholder="Enter your email"
               />
             </div>
 
             {isSignUp && (
               <div className="form-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="name">Full Name</label>
                 <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter your email"
+                  placeholder="Enter your full name"
                 />
               </div>
             )}
@@ -175,7 +175,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 onClick={() => {
                   setIsSignUp(!isSignUp);
                   setError('');
-                  setFormData({ username: '', email: '', password: '', rememberMe: false });
+                  setFormData({ name: '', email: '', password: '', rememberMe: false });
                 }}
               >
                 {isSignUp ? 'Sign In' : 'Sign Up'}

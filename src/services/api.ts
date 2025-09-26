@@ -54,10 +54,10 @@ apiClient.interceptors.response.use(
 );
 
 export const authService = {
-  async login(username: string, password: string, rememberMe: boolean): Promise<ApiResponse<AuthResponse>> {
+  async login(email: string, password: string, rememberMe: boolean): Promise<ApiResponse<AuthResponse>> {
     try {
       const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/login', {
-        username,
+        email,
         password,
         rememberMe
       });
@@ -81,10 +81,10 @@ export const authService = {
     }
   },
 
-  async signup(username: string, email: string, password: string): Promise<ApiResponse<AuthResponse>> {
+  async signup(name: string, email: string, password: string): Promise<ApiResponse<AuthResponse>> {
     try {
       const response: AxiosResponse<ApiResponse<AuthResponse>> = await apiClient.post('/auth/signup', {
-        username,
+        name,
         email,
         password
       });
@@ -125,9 +125,8 @@ export const authService = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
         id: payload.userId,
-        username: payload.username,
-        email: payload.email,
-        isVerified: payload.isVerified
+        name: payload.name,
+        email: payload.email
       };
     } catch (error) {
       return null;

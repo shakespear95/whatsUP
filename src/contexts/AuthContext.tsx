@@ -5,8 +5,8 @@ import { authService } from '../services/api';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; error?: string }>;
-  signup: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (credential: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -39,9 +39,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string, rememberMe: boolean) => {
+  const login = async (email: string, password: string, rememberMe: boolean) => {
     try {
-      const response = await authService.login(username, password, rememberMe);
+      const response = await authService.login(email, password, rememberMe);
 
       if (response.success && response.data) {
         setUser(response.data.user);
@@ -54,9 +54,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (username: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string) => {
     try {
-      const response = await authService.signup(username, email, password);
+      const response = await authService.signup(name, email, password);
 
       if (response.success && response.data) {
         setUser(response.data.user);

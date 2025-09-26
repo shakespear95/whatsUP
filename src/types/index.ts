@@ -15,11 +15,9 @@ export interface Event {
 
 export interface User {
   id: string;
-  username: string;
-  email?: string;
-  name?: string;
+  name: string;
+  email: string;
   picture?: string;
-  isVerified?: boolean;
   provider?: 'local' | 'google';
 }
 
