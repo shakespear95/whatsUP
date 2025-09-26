@@ -1,10 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { query } from '../lib/db';
 
 interface SignupRequest {
-  username: string;
+  name: string;
   email: string;
   password: string;
 }
@@ -18,12 +18,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { username, email, password }: SignupRequest = req.body;
+    const { name, email, password }: SignupRequest = req.body;
 
-    if (!username || !email || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Username, email, and password are required'
+        error: 'Name, email, and password are required'
       });
     }
 
@@ -34,47 +34,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // TODO: Replace with actual database operations
-    // For now, simulating user creation
-    const mockUsers = [
-      {
-        id: '1',
-        username: 'demo',
-        email: 'demo@eventfinder.com',
-        password: await bcrypt.hash('password', 10),
-        isVerified: true
-      }
-    ];
-
     // Check if user already exists
-    const existingUser = mockUsers.find(u => u.username === username || u.email === email);
-    if (existingUser) {
+    const existingUserResult = await query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (existingUserResult.rows.length > 0) {
       return res.status(409).json({
         success: false,
-        error: 'Username or email already exists'
+        error: 'Email already exists'
       });
     }
 
     // Create new user
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = {
-      id: uuidv4(),
-      username,
-      email,
-      password: hashedPassword,
-      isVerified: false,
-      createdAt: new Date().toISOString()
-    };
+    const newUserResult = await query(
+      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, created_at',
+      [name, email, hashedPassword]
+    );
 
-    // TODO: Save user to database
-    // TODO: Send verification email
+    const newUser = newUserResult.rows[0];
 
     const token = jwt.sign(
       {
         userId: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        isVerified: newUser.isVerified
+        name: newUser.name,
+        email: newUser.email
       },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: '24h' }
@@ -93,9 +79,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         refreshToken,
         user: {
           id: newUser.id,
-          username: newUser.username,
+          name: newUser.name,
           email: newUser.email,
-          isVerified: newUser.isVerified
+          createdAt: newUser.created_at
         }
       },
       message: 'Account created successfully'

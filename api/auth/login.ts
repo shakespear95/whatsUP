@@ -1,9 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { query } from '../lib/db';
 
 interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
   rememberMe: boolean;
 }
@@ -17,30 +18,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { username, password, rememberMe }: LoginRequest = req.body;
+    const { email, password, rememberMe }: LoginRequest = req.body;
 
-    if (!username || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Username and password are required'
+        error: 'Email and password are required'
       });
     }
 
-    // TODO: Replace with actual database query
-    // For now, using mock user data
-    const mockUsers = [
-      {
-        id: '1',
-        username: 'demo',
-        email: 'demo@eventfinder.com',
-        password: await bcrypt.hash('password', 10), // 'password'
-        isVerified: true
-      }
-    ];
+    // Find user by email
+    const userResult = await query(
+      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
+      [email]
+    );
 
-    const user = mockUsers.find(u => u.username === username);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
 
-    if (!user || !await bcrypt.compare(password, user.password)) {
+    const user = userResult.rows[0];
+
+    // Verify password
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    if (!passwordValid) {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
@@ -53,9 +57,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = jwt.sign(
       {
         userId: user.id,
-        username: user.username,
-        email: user.email,
-        isVerified: user.isVerified
+        name: user.name,
+        email: user.email
       },
       process.env.JWT_SECRET || 'fallback-secret-key',
       { expiresIn: tokenExpiry }
@@ -67,8 +70,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { expiresIn: refreshTokenExpiry }
     );
 
-    // TODO: Store refresh token in database
-
     res.status(200).json({
       success: true,
       data: {
@@ -76,9 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         refreshToken,
         user: {
           id: user.id,
-          username: user.username,
-          email: user.email,
-          isVerified: user.isVerified
+          name: user.name,
+          email: user.email
         }
       }
     });

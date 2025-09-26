@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
+import { query } from '../../lib/db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -34,49 +35,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Mock search history data
-    const mockSearchHistory = [
-      {
-        id: '1',
-        searchId: 'search-123',
-        searchCriteria: {
-          location: 'New York, NY',
-          activity_type: 'Music',
-          timeframe: 'This Weekend',
-          keywords: 'jazz'
-        },
-        timestamp: '2025-09-25T14:30:00Z',
-        resultsCount: 5
-      },
-      {
-        id: '2',
-        searchId: 'search-456',
-        searchCriteria: {
-          location: 'Brooklyn, NY',
-          activity_type: 'Food',
-          timeframe: 'Today',
-          keywords: 'food truck'
-        },
-        timestamp: '2025-09-24T11:15:00Z',
-        resultsCount: 12
-      },
-      {
-        id: '3',
-        searchId: 'search-789',
-        searchCriteria: {
-          location: 'Manhattan, NY',
-          activity_type: 'Art',
-          timeframe: 'Next Week',
-          keywords: 'gallery'
-        },
-        timestamp: '2025-09-23T16:45:00Z',
-        resultsCount: 8
-      }
-    ];
+    // Get search history from database
+    const searchHistoryResult = await query(
+      `SELECT id, search_query, location, activity_type, timeframe, created_at,
+              jsonb_array_length(results) as results_count
+       FROM user_searches
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    const searchHistory = searchHistoryResult.rows.map(row => ({
+      id: row.id,
+      searchId: row.id,
+      searchCriteria: row.search_query,
+      timestamp: row.created_at,
+      resultsCount: row.results_count || 0,
+      location: row.location,
+      activityType: row.activity_type,
+      timeframe: row.timeframe
+    }));
 
     res.status(200).json({
       success: true,
-      data: mockSearchHistory
+      data: searchHistory
     });
   } catch (error) {
     console.error('Search history error:', error);

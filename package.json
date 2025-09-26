@@ -21,6 +21,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
     "openai": "^5.23.0",
+    "pg": "^8.11.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.2",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.8"
   },
   "scripts": {
