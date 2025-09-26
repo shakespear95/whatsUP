@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { Search, Menu, X, Ticket, User, LogOut } from 'lucide-react';
+import { Search, Menu, X, Ticket } from 'lucide-react';
 import './Header.css';
 
 interface HeaderProps {
@@ -8,7 +7,6 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
-  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -37,22 +35,6 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
                 <Search size={16} /> Search
               </button>
             </li>
-
-            {isAuthenticated ? (
-              <li className="user-dropdown">
-                <button className="search-btn">
-                  <User size={16} /> Hi, {user?.username}
-                </button>
-                <button onClick={logout} className="primary-btn small-btn">
-                  <LogOut size={16} /> Logout
-                </button>
-              </li>
-            ) : (
-              <li className="auth-buttons">
-                <button className="primary-btn small-btn">Login</button>
-                <button className="primary-btn small-btn">Sign Up</button>
-              </li>
-            )}
           </ul>
         </nav>
 
@@ -70,21 +52,6 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
           <li><a href="#browse" onClick={closeMobileMenu}>Browse events</a></li>
           <li><a href="#help" onClick={closeMobileMenu}>Get help</a></li>
 
-          {!isAuthenticated && (
-            <>
-              <li>
-                <button className="login-btn-mobile" onClick={closeMobileMenu}>
-                  Login
-                </button>
-              </li>
-              <li>
-                <button className="signup-btn-mobile" onClick={closeMobileMenu}>
-                  Sign Up
-                </button>
-              </li>
-            </>
-          )}
-
           <li>
             <button
               className="search-btn-mobile"
@@ -96,20 +63,6 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick }) => {
               <Search size={16} /> Search Events
             </button>
           </li>
-
-          {isAuthenticated && (
-            <li>
-              <button
-                className="logout-btn-mobile"
-                onClick={() => {
-                  logout();
-                  closeMobileMenu();
-                }}
-              >
-                <LogOut size={16} /> Logout
-              </button>
-            </li>
-          )}
 
           <li>
             <button className="close-mobile-menu" onClick={closeMobileMenu}>

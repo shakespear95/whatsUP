@@ -171,7 +171,7 @@ export const authService = {
 export const searchService = {
   async searchEvents(searchData: SearchFormData): Promise<ApiResponse<SearchResponse>> {
     try {
-      const response: AxiosResponse<ApiResponse<SearchResponse>> = await apiClient.post('/search', searchData);
+      const response: AxiosResponse<ApiResponse<SearchResponse>> = await apiClient.post('/search-simple', searchData);
       return response.data;
     } catch (error: any) {
       return {

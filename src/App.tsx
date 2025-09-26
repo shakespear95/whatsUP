@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header/Header';
 import Hero from './components/Hero/Hero';
 import SearchModal from './components/SearchModal/SearchModal';
@@ -65,8 +64,7 @@ function App() {
   };
 
   return (
-    <AuthProvider>
-      <div className="App">
+    <div className="App">
         <Header onSearchClick={handleSearchClick} />
         <Hero onSearchClick={handleSearchClick} />
 
@@ -145,8 +143,7 @@ function App() {
           onSearch={handleSearch}
           loading={searchLoading}
         />
-      </div>
-    </AuthProvider>
+    </div>
   );
 }
 
