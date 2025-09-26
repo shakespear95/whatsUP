@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "JWT_SECRET": "your-jwt-secret-here",
+    "JWT_REFRESH_SECRET": "your-jwt-refresh-secret-here",
+    "GOOGLE_CLIENT_ID": "placeholder-for-setup",
+    "GOOGLE_CLIENT_SECRET": "placeholder-for-setup",
+    "GOOGLE_REDIRECT_URI": "https://your-app-url.vercel.app/api/auth/google/callback",
+    "REACT_APP_GOOGLE_CLIENT_ID": "placeholder-for-setup",
+    "OPENAI_API_KEY": "your-openai-api-key-here",
+    "SERP_API_KEY": "your-serp-api-key-here",
+    "PERPLEXITY_API_KEY": "your-perplexity-api-key-here",
+    "GOOGLE_AI_API_KEY": "your-google-ai-api-key-here"
+  }
+}
