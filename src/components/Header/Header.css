@@ -1,184 +1,129 @@
-/* Navbar */
-.navbar {
-    background: linear-gradient(to right, var(--gradient-dark-start), var(--gradient-dark-end));
-    padding: 15px 40px;
+/* What's UP Header */
+.whatsup-header {
+    padding: 20px 24px;
+    background-color: transparent;
+}
+
+.header-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    align-items: flex-start;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
-.navbar-left .logo {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1.8em;
+.logo-section {
+    flex: 1;
+}
+
+.logo {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 2.5rem;
     font-weight: 700;
-    color: var(--text-light);
+    color: #1a1a1a;
+    margin: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    text-decoration: none;
+    gap: 4px;
 }
 
-.navbar-left .logo svg {
-    color: var(--accent-blue);
+.location-pin {
+    color: #ef4444;
+    width: 32px;
+    height: 32px;
+    margin: 0 -2px;
 }
 
-.navbar-right ul {
-    list-style: none;
+.tagline {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 8px 0 0 0;
+    line-height: 1.3;
+}
+
+.header-actions {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 12px;
 }
 
-.navbar-right ul li a,
-.navbar-right .search-btn {
-    font-size: 1.1em;
-    color: var(--text-light);
-    padding: 5px 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-    white-space: nowrap;
-    text-decoration: none;
-}
-
-.navbar-right .search-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    cursor: pointer;
-    padding: 8px 15px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.navbar-right .search-btn:hover {
-    background-color: var(--secondary-bg);
-    border-color: var(--accent-blue);
-}
-
-.user-dropdown {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.auth-buttons {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.menu-toggle {
-    display: none;
-    background: none;
+.demo-button {
+    background-color: #1f2937;
+    color: white;
     border: none;
-    color: var(--text-light);
+    border-radius: 12px;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
-    padding: 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-.menu-toggle:hover,
-.menu-toggle:focus {
-    background-color: rgba(255, 255, 255, 0.1);
-    outline: none;
-}
-
-.menu-toggle:active {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Mobile Menu */
-.mobile-menu {
     display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--primary-bg);
-    z-index: 1001;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    transform: translateX(100%);
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-    opacity: 0;
-    pointer-events: none;
+    gap: 6px;
+    transition: background-color 0.2s ease;
 }
 
-.mobile-menu.open {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: all;
+.demo-button:hover {
+    background-color: #374151;
 }
 
-.mobile-menu ul {
-    list-style: none;
-    padding: 0;
-    width: 80%;
-    text-align: center;
+.demo-icon {
+    font-size: 1rem;
 }
 
-.mobile-menu ul li {
-    margin-bottom: 30px;
-}
-
-.mobile-menu ul li a,
-.mobile-menu .search-btn-mobile,
-.mobile-menu .login-btn-mobile,
-.mobile-menu .signup-btn-mobile,
-.mobile-menu .logout-btn-mobile,
-.mobile-menu .close-mobile-menu {
-    font-size: 1.8em;
-    color: var(--text-light);
-    display: block;
-    padding: 10px 0;
+.settings-button {
+    background-color: transparent;
     border: none;
-    background: none;
-    width: 100%;
+    color: #6b7280;
     cursor: pointer;
-    transition: color 0.3s ease;
-    text-decoration: none;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
 }
 
-.mobile-menu .search-btn-mobile,
-.mobile-menu .login-btn-mobile,
-.mobile-menu .signup-btn-mobile,
-.mobile-menu .logout-btn-mobile,
-.mobile-menu .close-mobile-menu {
-    color: var(--accent-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.mobile-menu .login-btn-mobile:hover,
-.mobile-menu .signup-btn-mobile:hover {
-    color: var(--gradient-purple-end);
-}
-
-.mobile-menu .close-mobile-menu {
-    margin-top: 40px;
-    font-size: 1.5em;
+.settings-button:hover {
+    background-color: #f3f4f6;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .navbar {
-        padding: 15px 20px;
+    .whatsup-header {
+        padding: 16px 20px;
     }
 
-    .navbar-right {
+    .logo {
+        font-size: 2rem;
+    }
+
+    .location-pin {
+        width: 28px;
+        height: 28px;
+    }
+
+    .tagline {
+        font-size: 0.875rem;
+    }
+
+    .demo-button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        align-items: center;
+    }
+
+    .tagline {
         display: none;
     }
 
-    .menu-toggle {
-        display: block;
+    .logo {
+        font-size: 1.75rem;
+    }
+
+    .location-pin {
+        width: 24px;
+        height: 24px;
     }
 }
