@@ -91,7 +91,7 @@ export function StartScreen({ onStartSearch }: StartScreenProps) {
             <div className="flex-1 relative">
               <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Standort wählen..."
+                placeholder="Choose location..."
                 value={filters.location}
                 onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value, useCurrentLocation: false }))}
                 className="pl-12 h-12"
@@ -149,12 +149,12 @@ export function StartScreen({ onStartSearch }: StartScreenProps) {
           </div>
           
           <h2 className="text-xl font-medium mb-4">
-            Suche nach Events in deiner Nähe
+            Search for events near you
           </h2>
           
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Entdecke spannende Veranstaltungen, Konzerte, Workshops und vieles mehr. 
-            Wähle deinen Standort und starte die Suche nach dem perfekten Event für dich.
+            Discover exciting events, concerts, workshops and much more. 
+            Choose your location and start searching for the perfect event for you.
           </p>
 
           <Button 

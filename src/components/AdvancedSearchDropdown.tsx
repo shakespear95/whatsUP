@@ -267,7 +267,7 @@ const eventCategories = [
       { id: 'mystery', label: 'Mystery & Rätseln' },
       { id: 'weird-science', label: 'Weird Science' },
       { id: 'unusual', label: 'Ungewöhnliche Events' },
-      { id: 'bizarre', label: 'Bizarre Veranstaltungen' },
+      { id: 'bizarre', label: 'Bizarre Events' },
       { id: 'experimental-weird', label: 'Experimentell & Weird' }
     ]
   }
@@ -591,7 +591,7 @@ export function AdvancedSearchDropdown({ filters, onFiltersChange, onClose, full
 
       {/* Keywords */}
       <div className="mt-6 space-y-2">
-        <label className="block font-medium">Stichwörter</label>
+        <label className="block font-medium">Keywords</label>
         <Input
           placeholder="z.B. Jazz, Outdoor, Familie..."
           value={filters.keywords}

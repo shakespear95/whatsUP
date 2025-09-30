@@ -201,7 +201,7 @@ export function EventDetailModal({
               onClick={onClose}
             >
               <X className="w-5 h-5 text-gray-700" />
-              <span className="sr-only">Modal schließen</span>
+              <span className="sr-only">Close modal</span>
             </Button>
             
             {/* Date Badge */}

@@ -23,47 +23,47 @@ interface AdvancedStartScreenProps {
 // Category data structure - ERWEITERT mit neuen UNIQUE Kategorien
 const categoryData = {
   'konzerte': {
-    label: 'Konzerte & Party',
+    label: 'Concerts & Party',
     color: '#8B5CF6',
     subcategories: ['pop-rock', 'elektro-dance', 'jazz-blues', 'klassik-oper', 'hip-hop-rap', 'schlager-volksmusik', 'metal-punk', 'world-music', 'cover-bands', 'party-clubbing', 'festivals']
   },
   'buehne': {
-    label: 'Bühne',
+    label: 'Stage & Theater',
     color: '#EF4444',
-    subcategories: ['theater', 'musical', 'comedy-kabarett', 'tanz-ballett', 'varieté-zirkus', 'oper-operette', 'lesung-literatur', 'poetry-slam']
+    subcategories: ['theater', 'musical', 'comedy-cabaret', 'dance-ballet', 'variety-circus', 'opera', 'literature-reading', 'poetry-slam']
   },
   'kunst': {
-    label: 'Kunst & Museum',
+    label: 'Art & Museums',
     color: '#3B82F6',
-    subcategories: ['ausstellung', 'museum', 'galerie', 'vernissage', 'kunsthandwerk', 'fotografie', 'film-kino', 'architektur']
+    subcategories: ['exhibition', 'museum', 'gallery', 'vernissage', 'handicrafts', 'photography', 'film-cinema', 'architecture']
   },
   'familie': {
-    label: 'Familie & Kinder',
+    label: 'Family & Kids',
     color: '#10B981',
-    subcategories: ['kindertheater', 'zirkus-kinder', 'workshops-kids', 'märchen-geschichten', 'bastel-kreativ', 'spielplatz-events', 'familienkonzerte', 'zoo-tiere']
+    subcategories: ['children-theater', 'kids-circus', 'kids-workshops', 'fairy-tales', 'arts-crafts', 'playground-events', 'family-concerts', 'zoo-animals']
   },
   'sport': {
-    label: 'Sport & Freizeit',
+    label: 'Sports & Recreation',
     color: '#F59E0B',
-    subcategories: ['fussball', 'eishockey', 'basketball', 'tennis', 'laufsport', 'radsport', 'wandern-trekking', 'wintersport', 'wassersport', 'fitness-yoga', 'tanzkurse', 'e-sport']
+    subcategories: ['football', 'ice-hockey', 'basketball', 'tennis', 'running', 'cycling', 'hiking-trekking', 'winter-sports', 'water-sports', 'fitness-yoga', 'dance-classes', 'e-sports']
   },
   'messen': {
-    label: 'Messen & Märkte',
+    label: 'Trade Shows & Markets',
     color: '#6366F1',
     subcategories: ['flohmärkte', 'weihnachtsmärkte', 'wochenmärkte', 'fachmessen', 'publikumsmessen', 'job-messen', 'handwerkermärkte', 'food-markets']
   },
   'kulinarik': {
-    label: 'Kulinarik',
+    label: 'Food & Culinary',
     color: '#EC4899',
     subcategories: ['food-festivals', 'wine-dine', 'brunch-frühstück', 'kochkurse', 'degustationen', 'street-food', 'bier-craftbeer', 'gin-cocktails', 'veggie-vegan']
   },
   'wissen': {
-    label: 'Wissen & Business',
+    label: 'Knowledge & Business',
     color: '#14B8A6',
     subcategories: ['vorträge-talks', 'workshops-kurse', 'seminare', 'networking', 'konferenzen', 'weiterbildung', 'startup-events', 'tech-meetups']
   },
   'specials': {
-    label: 'Specials',
+    label: 'Special Events',
     color: '#F97316',
     subcategories: ['stadtführungen', 'advents-events', 'silvester', 'valentinstag', 'public-viewing', 'open-air', 'charity-events', 'pride-events']
   },
@@ -74,7 +74,7 @@ const categoryData = {
     subcategories: ['pop-up-events', 'secret-locations', 'underground-alternative', 'guerilla-events', 'flash-mobs', 'immersive-experiences', 'experimental-art', 'diy-maker-events', 'subkultur', 'lost-places-tours']
   },
   'community-spontan': {
-    label: 'Community & Spontan',
+    label: 'Community & Spontaneous',
     color: '#059669',
     subcategories: ['nachbarschaftstreffen', 'spontane-gatherings', 'skill-sharing', 'tauschbörsen', 'repair-cafés', 'community-gardens', 'jam-sessions', 'open-mic-nights', 'stammtische', 'meet-greet']
   },
@@ -319,7 +319,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             <div className="flex items-center gap-3">
               <span className="text-xl font-bold text-blue-600">What's UP</span>
               <span className="text-sm text-muted-foreground font-medium">
-                Finde einzigartige Events!
+                Find unique events!
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -451,7 +451,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                       <span>
                         {filters.categories.length > 0 
                           ? `${filters.categories.length} Kategorien` 
-                          : "Kategorien wählen"
+                          : "Choose categories"
                         }
                       </span>
                       <ChevronRight className="w-4 h-4" />
@@ -580,7 +580,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   onValueChange={(value) => updateFilters({ timeRange: value })}
                 >
                   <SelectTrigger className="w-full justify-between h-12 md:h-10">
-                    <SelectValue placeholder="Zeitraum wählen" />
+                    <SelectValue placeholder="Choose time period" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">An allen Terminen</SelectItem>
@@ -588,9 +588,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                     <SelectItem value="tomorrow">Morgen (26.09.)</SelectItem>
                     <SelectItem value="thisWeek">Diese Woche (25.09. - 28.09.)</SelectItem>
                     <SelectItem value="thisWeekend">Dieses Wochenende (26.09. - 28.09.)</SelectItem>
-                    <SelectItem value="nextWeek">Nächste Woche (29.09. - 05.10.)</SelectItem>
-                    <SelectItem value="nextMonth">Nächsten Monat (01.10. - 31.10.)</SelectItem>
-                    <SelectItem value="custom">Gewünschten Zeitraum wählen</SelectItem>
+                    <SelectItem value="nextWeek">Next week (29.09. - 05.10.)</SelectItem>
+                    <SelectItem value="nextMonth">Next month (01.10. - 31.10.)</SelectItem>
+                    <SelectItem value="custom">Choose custom time period</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -724,7 +724,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                       ? "Gratis" 
                       : filters.budget.max !== 200 
                         ? `CHF ${filters.budget.max}` 
-                        : "Budget wählen"
+                        : "Choose budget"
                     }
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
@@ -792,7 +792,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                       <span>
                         {filters.quickFilters.length > 0 
                           ? `${filters.quickFilters.length} Filter aktiv` 
-                          : "Filter wählen"
+                          : "Choose filters"
                         }
                       </span>
                       <ChevronDown className="w-4 h-4" />
@@ -1038,7 +1038,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
 
             <div>
-              <label className="text-sm font-medium">Begründung *</label>
+              <label className="text-sm font-medium">Reason *</label>
               <Textarea
                 placeholder="Warum braucht WhatsUP diese Kategorie?"
                 value={categoryRequest.reason}
@@ -1051,7 +1051,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             <div>
               <label className="text-sm font-medium">Event-Beispiele</label>
               <Textarea
-                placeholder="Nennen Sie 2-3 konkrete Event-Beispiele für diese Kategorie..."
+                placeholder="Name 2-3 specific event examples for this category..."
                 value={categoryRequest.examples}
                 onChange={(e) => setCategoryRequest(prev => ({ ...prev, examples: e.target.value }))}
                 className="mt-1"
@@ -1144,7 +1144,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
 
             <div>
-              <label className="text-sm font-medium">Begründung *</label>
+              <label className="text-sm font-medium">Reason *</label>
               <Textarea
                 placeholder="Warum braucht WhatsUP diesen Filter?"
                 value={filterRequest.reason}
@@ -1157,7 +1157,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             <div>
               <label className="text-sm font-medium">Anwendungs-Beispiele</label>
               <Textarea
-                placeholder="Nennen Sie 2-3 konkrete Events, wo dieser Filter hilfreich wäre..."
+                placeholder="Name 2-3 specific events where this filter would be helpful..."
                 value={filterRequest.examples}
                 onChange={(e) => setFilterRequest(prev => ({ ...prev, examples: e.target.value }))}
                 className="mt-1"

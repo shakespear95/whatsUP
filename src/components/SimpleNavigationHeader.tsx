@@ -332,7 +332,7 @@ export function SimpleNavigationHeader({
           <div className="flex items-center gap-3">
             <span className="text-xl font-bold text-blue-600">What's UP</span>
             <span className="text-sm text-muted-foreground font-medium">
-              Finde einzigartige Events!
+              Find unique events!
             </span>
           </div>
           <div className="flex items-center gap-2">

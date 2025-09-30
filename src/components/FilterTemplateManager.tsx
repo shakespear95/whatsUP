@@ -128,7 +128,7 @@ export function FilterTemplateManager({ currentFilters, onLoadTemplate }: Filter
               <div className="text-center py-8 text-muted-foreground">
                 <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Noch keine Vorlagen gespeichert</p>
-                <p className="text-sm">Speichere deine Lieblings-Suchfilter für schnellen Zugriff</p>
+                <p className="text-sm">Save your favorite search filters for quick access</p>
               </div>
             ) : (
               templates.map((template) => (
@@ -198,7 +198,7 @@ export function FilterTemplateManager({ currentFilters, onLoadTemplate }: Filter
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Icon wählen:</label>
+              <label className="block text-sm font-medium mb-2">Choose icon:</label>
               <div className="flex flex-wrap gap-2">
                 {templateIcons.map((icon) => (
                   <Button
