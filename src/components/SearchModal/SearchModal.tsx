@@ -62,7 +62,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             name="location"
             value={formData.location}
             onChange={handleInputChange}
-            placeholder="e.g., Berlin or Near Brandenburg Gate"
+            placeholder="e.g., palma de mallorca"
             required
           />
 
@@ -102,7 +102,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             value={formData.radius || ''}
             onChange={handleInputChange}
             min="1"
-            placeholder="e.g., 50"
+            placeholder="20"
           />
 
           <label htmlFor="keywords">Keywords (optional):</label>
@@ -112,7 +112,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             name="keywords"
             value={formData.keywords}
             onChange={handleInputChange}
-            placeholder="e.g., jazz, beginner yoga"
+            placeholder="family with kids 11 years"
           />
 
           <label htmlFor="email">Email for results (optional):</label>
