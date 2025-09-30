@@ -5,8 +5,9 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    background: linear-gradient(135deg, var(--gradient-blue-start), var(--gradient-purple-end));
+    background: #ffffff;
     padding: 0 20px;
+    width: 100%;
 }
 
 .hero-content {
@@ -17,12 +18,29 @@
     font-size: 5em;
     line-height: 1.1;
     margin-bottom: 20px;
+    color: #333333;
 }
 
 .hero-content p {
     font-size: 1.4em;
     margin-bottom: 40px;
-    color: rgba(255, 255, 255, 0.8);
+    color: #666666;
+}
+
+/* Desktop Layout */
+@media (min-width: 769px) {
+    .hero {
+        padding: 0 40px;
+    }
+
+    .hero-content {
+        max-width: none;
+        width: 100%;
+    }
+
+    .hero-content h1 {
+        font-size: 4.5em;
+    }
 }
 
 /* Responsive Design */
