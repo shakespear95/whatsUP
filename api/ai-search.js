@@ -54,9 +54,10 @@ async function generateEventsWithAI(searchData) {
 
   // Try multiple AI providers for reliability
   const aiProviders = [
+    { name: 'serpapi', func: generateWithSerpAPI },
     { name: 'openai', func: generateWithOpenAI },
-    { name: 'claude', func: generateWithClaude },
-    { name: 'gemini', func: generateWithGemini }
+    { name: 'gemini', func: generateWithGemini },
+    { name: 'claude', func: generateWithClaude }
   ];
 
   for (const provider of aiProviders) {
@@ -160,6 +161,112 @@ async function generateWithOpenAI(prompt, searchData) {
   return JSON.parse(jsonMatch[0]);
 }
 
+async function generateWithSerpAPI(prompt, searchData) {
+  const SERP_API_KEY = process.env.SERP_API_KEY;
+  if (!SERP_API_KEY) throw new Error('SerpAPI key not configured');
+
+  const { location, activity_type, timeframe } = searchData;
+
+  // Search for real events using SerpAPI
+  const query = `${activity_type} events in ${location} ${timeframe}`;
+
+  console.log('🔍 SerpAPI Search:', { query, location, activity_type });
+
+  const response = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=10`);
+
+  if (!response.ok) {
+    throw new Error(`SerpAPI error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  // Process SerpAPI results into event format
+  const events = processSerpResults(data, searchData);
+
+  if (events.length === 0) {
+    throw new Error('No events found in SerpAPI results');
+  }
+
+  return events;
+}
+
+function processSerpResults(serpData, searchData) {
+  const { location, activity_type } = searchData;
+  const events = [];
+
+  // Process organic search results
+  if (serpData.organic_results) {
+    serpData.organic_results.slice(0, 6).forEach((result, index) => {
+      if (result.title && result.snippet) {
+        events.push({
+          id: `serp-${Date.now()}-${index}`,
+          title: result.title,
+          description: result.snippet,
+          date: getDateInTimeframe(searchData.timeframe, index),
+          time: getRandomTime(),
+          location: location,
+          venue: extractVenue(result.title, location),
+          address: `${location} - See website for exact address`,
+          price: extractPrice(result.snippet) || 'See website',
+          category: activity_type,
+          specialFeature: 'Real event from web search',
+          organizer: extractOrganizer(result.title),
+          capacity: 'See website',
+          tags: [activity_type.toLowerCase(), 'real-event', 'web-search'],
+          tickets: {
+            type: 'website',
+            value: result.link || '#',
+            label: 'Event Website'
+          },
+          source: 'SerpAPI',
+          realEvent: true
+        });
+      }
+    });
+  }
+
+  return events;
+}
+
+function extractVenue(title, location) {
+  // Try to extract venue name from title
+  const venuePattern = /(at|@)\s+([^-,]+)/i;
+  const match = title.match(venuePattern);
+  if (match) {
+    return match[2].trim();
+  }
+  return `${location} Venue`;
+}
+
+function extractPrice(snippet) {
+  // Extract price information from snippet
+  const pricePatterns = [
+    /\$\d+(?:-\$?\d+)?/,
+    /free/i,
+    /complimentary/i,
+    /€\d+(?:-€?\d+)?/,
+    /£\d+(?:-£?\d+)?/
+  ];
+
+  for (const pattern of pricePatterns) {
+    const match = snippet.match(pattern);
+    if (match) {
+      return match[0];
+    }
+  }
+
+  return null;
+}
+
+function extractOrganizer(title) {
+  // Extract organizer from title (simple heuristic)
+  const parts = title.split(' - ');
+  if (parts.length > 1) {
+    return parts[parts.length - 1].trim();
+  }
+  return 'Event Organizer';
+}
+
 async function generateWithClaude(prompt, searchData) {
   // Placeholder for Claude API integration
   throw new Error('Claude API not configured');
@@ -203,6 +310,8 @@ async function generateWithGemini(prompt, searchData) {
 
 function isProviderAvailable(provider) {
   switch (provider) {
+    case 'serpapi':
+      return !!process.env.SERP_API_KEY;
     case 'openai':
       return !!process.env.OPENAI_API_KEY;
     case 'gemini':
