@@ -356,8 +356,9 @@ function getRandomLongitude(location) {
 }
 
 function getLocationCoordinates(location) {
-  // Common location coordinates
+  // Global location coordinates
   const locationMap = {
+    // Switzerland
     'vaduz': { lat: 47.1410, lng: 9.5209 },
     'zurich': { lat: 47.3769, lng: 8.5417 },
     'geneva': { lat: 46.2044, lng: 6.1432 },
@@ -366,15 +367,59 @@ function getLocationCoordinates(location) {
     'lausanne': { lat: 46.5197, lng: 6.6323 },
     'lucerne': { lat: 47.0502, lng: 8.3093 },
     'st. gallen': { lat: 47.4245, lng: 9.3767 },
+
+    // South Africa
+    'cape town': { lat: -33.9249, lng: 18.4241 },
+    'johannesburg': { lat: -26.2041, lng: 28.0473 },
+    'durban': { lat: -29.8587, lng: 31.0218 },
+    'pretoria': { lat: -25.7479, lng: 28.2293 },
+
+    // Major Global Cities
     'new york': { lat: 40.7128, lng: -74.0060 },
+    'los angeles': { lat: 34.0522, lng: -118.2437 },
+    'chicago': { lat: 41.8781, lng: -87.6298 },
+    'miami': { lat: 25.7617, lng: -80.1918 },
+    'san francisco': { lat: 37.7749, lng: -122.4194 },
     'london': { lat: 51.5074, lng: -0.1278 },
     'paris': { lat: 48.8566, lng: 2.3522 },
     'berlin': { lat: 52.5200, lng: 13.4050 },
     'rome': { lat: 41.9028, lng: 12.4964 },
     'madrid': { lat: 40.4168, lng: -3.7038 },
+    'barcelona': { lat: 41.3851, lng: 2.1734 },
     'amsterdam': { lat: 52.3676, lng: 4.9041 },
     'vienna': { lat: 48.2082, lng: 16.3738 },
-    'prague': { lat: 50.0755, lng: 14.4378 }
+    'prague': { lat: 50.0755, lng: 14.4378 },
+    'munich': { lat: 48.1351, lng: 11.5820 },
+    'copenhagen': { lat: 55.6761, lng: 12.5683 },
+    'stockholm': { lat: 59.3293, lng: 18.0686 },
+
+    // Asia Pacific
+    'tokyo': { lat: 35.6762, lng: 139.6503 },
+    'sydney': { lat: -33.8688, lng: 151.2093 },
+    'melbourne': { lat: -37.8136, lng: 144.9631 },
+    'singapore': { lat: 1.3521, lng: 103.8198 },
+    'hong kong': { lat: 22.3193, lng: 114.1694 },
+    'seoul': { lat: 37.5665, lng: 126.9780 },
+    'bangkok': { lat: 13.7563, lng: 100.5018 },
+    'mumbai': { lat: 19.0760, lng: 72.8777 },
+    'delhi': { lat: 28.7041, lng: 77.1025 },
+
+    // Canada
+    'toronto': { lat: 43.6532, lng: -79.3832 },
+    'vancouver': { lat: 49.2827, lng: -123.1207 },
+    'montreal': { lat: 45.5017, lng: -73.5673 },
+
+    // Other Major Cities
+    'dubai': { lat: 25.2048, lng: 55.2708 },
+    'cairo': { lat: 30.0444, lng: 31.2357 },
+    'istanbul': { lat: 41.0082, lng: 28.9784 },
+    'moscow': { lat: 55.7558, lng: 37.6176 },
+    'budapest': { lat: 47.4979, lng: 19.0402 },
+    'warsaw': { lat: 52.2297, lng: 21.0122 },
+    'athens': { lat: 37.9838, lng: 23.7275 },
+    'lisbon': { lat: 38.7223, lng: -9.1393 },
+    'oslo': { lat: 59.9139, lng: 10.7522 },
+    'helsinki': { lat: 60.1699, lng: 24.9384 }
   };
 
   const searchKey = location.toLowerCase().replace(/,.*/, '').trim();

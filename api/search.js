@@ -8,6 +8,15 @@ export default async function handler(req, res) {
 
   const searchData = req.body;
 
+  // DEBUG: Log the search request
+  console.log('🔍 SEARCH REQUEST:', {
+    location: searchData.location,
+    activity_type: searchData.activity_type,
+    timeframe: searchData.timeframe,
+    budget: searchData.budget,
+    keywords: searchData.keywords
+  });
+
   if (!searchData.location || !searchData.activity_type || !searchData.timeframe) {
     return res.status(400).json({
       success: false,
@@ -176,6 +185,7 @@ function getActivityImage(activity) {
 
 function generateRealisticAddress(location) {
   const addressTemplates = {
+    // Switzerland
     'vaduz': [
       'Städtle 32, 9490 Vaduz',
       'Austrasse 15, 9490 Vaduz',
@@ -198,6 +208,48 @@ function generateRealisticAddress(location) {
       'Kramgasse 49, 3011 Bern',
       'Marktgasse 21, 3011 Bern',
       'Spitalgasse 34, 3011 Bern'
+    ],
+
+    // South Africa
+    'cape town': [
+      'Long Street 123, Cape Town City Centre, 8001',
+      'V&A Waterfront, Dock Road, Cape Town, 8002',
+      'Kloof Street 45, Gardens, Cape Town, 8001',
+      'Bree Street 78, Cape Town City Centre, 8001',
+      'Green Point Main Road 156, Green Point, 8005'
+    ],
+    'johannesburg': [
+      'Nelson Mandela Square, Sandton, 2196',
+      'Fox Street 234, Johannesburg CBD, 2001',
+      'Jan Smuts Avenue 89, Rosebank, 2196',
+      'Oxford Road 156, Melville, 2109',
+      'Pritchard Street 45, Johannesburg CBD, 2001'
+    ],
+
+    // Major International Cities
+    'new york': [
+      'Broadway 789, Manhattan, NY 10019',
+      '5th Avenue 123, New York, NY 10016',
+      'Times Square 456, New York, NY 10036',
+      'Central Park West 234, New York, NY 10024'
+    ],
+    'london': [
+      'Oxford Street 156, London W1C 1DE',
+      'Covent Garden 78, London WC2E 8RF',
+      'South Bank 234, London SE1 9PX',
+      'Camden High Street 45, London NW1 7JE'
+    ],
+    'paris': [
+      'Champs-Élysées 123, 75008 Paris',
+      'Rue de Rivoli 45, 75001 Paris',
+      'Boulevard Saint-Germain 78, 75006 Paris',
+      'Montmartre 156, 75018 Paris'
+    ],
+    'tokyo': [
+      'Shibuya Crossing 1-2-3, Tokyo 150-0043',
+      'Ginza 4-5-6, Chuo City, Tokyo 104-0061',
+      'Harajuku 7-8-9, Shibuya City, Tokyo 150-0001',
+      'Roppongi 10-11-12, Minato City, Tokyo 106-0032'
     ]
   };
 
