@@ -540,7 +540,7 @@ export default function App() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showSearchMode, setShowSearchMode] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const [demoMode, setDemoMode] = useState(true); // Demo mode enabled by default
+  // Demo mode removed - using AI-powered search
   
   // Favorites management
   const [favoriteEvents, setFavoriteEvents] = useState<Set<string>>(new Set());
@@ -900,7 +900,7 @@ export default function App() {
       }
 
       // Location and radius filter (simplified - in real app would use geocoding)
-      if (filters.location && filters.location.trim() && !demoMode) {
+      if (filters.location && filters.location.trim()) {
         // For demo purposes, we'll just do a simple string match
         // In a real app, you'd geocode the location and calculate actual distances
         const locationMatch = event.location.toLowerCase().includes(filters.location.toLowerCase());
@@ -927,8 +927,8 @@ export default function App() {
       return true;
     });
 
-    // DEMO MODE LOGIC - Ensure we always have results
-    if (demoMode && events.length === 0) {
+    // Ensure we always have results
+    if (events.length === 0) {
       // If no events match strict filters, apply relaxed filtering
       events = mockEvents.filter(event => {
         // Keep favorites filter and keywords as they are important
@@ -1041,8 +1041,6 @@ export default function App() {
         setShowStartScreen(false);
         setViewMode('list');
       }}
-      demoMode={demoMode}
-      onDemoModeToggle={() => setDemoMode(!demoMode)}
     />;
   }
 
@@ -1069,8 +1067,6 @@ export default function App() {
         currentFilters={filters}
         onQuickFilterChange={handleQuickFilterChange}
         favoriteEvents={favoriteEvents}
-        demoMode={demoMode}
-        onDemoModeToggle={() => setDemoMode(!demoMode)}
       />
       
       {/* Advanced Filters Modal */}
@@ -1107,7 +1103,7 @@ export default function App() {
           <div className="space-y-4">
             {filteredEvents.length > 0 ? (
               <>
-                {!demoMode && (
+                {false && (
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
                       ⚠️ <strong>Demo-Modus deaktiviert</strong> - Zeigt nur exakte Treffer. 
@@ -1122,7 +1118,7 @@ export default function App() {
                     </p>
                   </div>
                 )}
-                {demoMode && filteredEvents.length !== mockEvents.length && (
+                {filteredEvents.length !== mockEvents.length && (
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
                       🎯 <strong>Demo-Modus aktiv</strong> - Zeigt {filteredEvents.length} passende Events. 

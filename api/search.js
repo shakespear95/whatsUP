@@ -61,7 +61,7 @@ function generateSmartMockEvents(searchData) {
       time: '14:00',
       location: location,
       venue: `${location} Professional Center`,
-      address: `${Math.floor(Math.random() * 999) + 1} Workshop Blvd, ${location}`,
+      address: generateRealisticAddress(location),
       price: budget || '$25-45',
       category: activity_type,
       specialFeature: 'Certificate provided',
@@ -77,7 +77,7 @@ function generateSmartMockEvents(searchData) {
       time: '12:00',
       location: location,
       venue: `${location} Festival Grounds`,
-      address: `Festival Park, ${location}`,
+      address: generateRealisticAddress(location),
       price: budget || 'Free',
       category: activity_type,
       specialFeature: 'All-day festival',
@@ -93,7 +93,7 @@ function generateSmartMockEvents(searchData) {
       time: '19:30',
       location: location,
       venue: `The ${activity_type} Lounge`,
-      address: `${Math.floor(Math.random() * 99) + 1} Intimate St, ${location}`,
+      address: generateRealisticAddress(location),
       price: budget || '$15-30',
       category: activity_type,
       specialFeature: 'Limited to 25 people',
@@ -109,7 +109,7 @@ function generateSmartMockEvents(searchData) {
       time: '18:00',
       location: location,
       venue: `${location} Community Hub`,
-      address: `Community Center, ${location}`,
+      address: generateRealisticAddress(location),
       price: 'Free',
       category: activity_type,
       specialFeature: 'Networking & refreshments included',
@@ -172,4 +172,41 @@ function getActivityImage(activity) {
   };
 
   return imageMap[activity] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800';
+}
+
+function generateRealisticAddress(location) {
+  const addressTemplates = {
+    'vaduz': [
+      'Städtle 32, 9490 Vaduz',
+      'Austrasse 15, 9490 Vaduz',
+      'Marktgass 8, 9490 Vaduz',
+      'Äulestrasse 22, 9490 Vaduz',
+      'Zollstrasse 14, 9490 Vaduz'
+    ],
+    'zurich': [
+      'Bahnhofstrasse 45, 8001 Zürich',
+      'Limmatquai 78, 8001 Zürich',
+      'Münstergasse 12, 8001 Zürich',
+      'Niederdorfstrasse 33, 8001 Zürich'
+    ],
+    'geneva': [
+      'Rue du Rhône 85, 1204 Geneva',
+      'Place du Molard 12, 1204 Geneva',
+      'Rue de la Confédération 7, 1204 Geneva'
+    ],
+    'bern': [
+      'Kramgasse 49, 3011 Bern',
+      'Marktgasse 21, 3011 Bern',
+      'Spitalgasse 34, 3011 Bern'
+    ]
+  };
+
+  const searchKey = location.toLowerCase().replace(/,.*/, '').trim();
+  const addresses = addressTemplates[searchKey] || [
+    `${Math.floor(Math.random() * 99) + 1} Main Street, ${location}`,
+    `${Math.floor(Math.random() * 99) + 1} Center Avenue, ${location}`,
+    `${Math.floor(Math.random() * 99) + 1} Market Square, ${location}`
+  ];
+
+  return addresses[Math.floor(Math.random() * addresses.length)];
 }

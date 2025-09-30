@@ -323,15 +323,6 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant={demoMode ? "default" : "outline"}
-                size="sm"
-                onClick={onDemoModeToggle}
-                className="text-xs h-7 px-2"
-                title={demoMode ? "Demo-Modus aktiv - Zeigt immer Ergebnisse" : "Demo-Modus deaktiviert"}
-              >
-                {demoMode ? "🎯 DEMO" : "DEMO"}
-              </Button>
               <Button 
                 variant="ghost" 
                 size="icon"

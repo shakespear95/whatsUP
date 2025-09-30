@@ -345,12 +345,40 @@ function generateTags(activity_type, keywords) {
 }
 
 function getRandomLatitude(location) {
-  // Simplified: return random coordinates within reasonable range
-  return (Math.random() * 2 - 1) + 40.7128; // Roughly NYC area
+  // Get approximate coordinates for the searched location
+  const locationCoords = getLocationCoordinates(location);
+  return locationCoords.lat + (Math.random() * 0.1 - 0.05); // Small variation around location
 }
 
 function getRandomLongitude(location) {
-  return (Math.random() * 2 - 1) - 74.0060; // Roughly NYC area
+  const locationCoords = getLocationCoordinates(location);
+  return locationCoords.lng + (Math.random() * 0.1 - 0.05); // Small variation around location
+}
+
+function getLocationCoordinates(location) {
+  // Common location coordinates
+  const locationMap = {
+    'vaduz': { lat: 47.1410, lng: 9.5209 },
+    'zurich': { lat: 47.3769, lng: 8.5417 },
+    'geneva': { lat: 46.2044, lng: 6.1432 },
+    'basel': { lat: 47.5596, lng: 7.5886 },
+    'bern': { lat: 46.9481, lng: 7.4474 },
+    'lausanne': { lat: 46.5197, lng: 6.6323 },
+    'lucerne': { lat: 47.0502, lng: 8.3093 },
+    'st. gallen': { lat: 47.4245, lng: 9.3767 },
+    'new york': { lat: 40.7128, lng: -74.0060 },
+    'london': { lat: 51.5074, lng: -0.1278 },
+    'paris': { lat: 48.8566, lng: 2.3522 },
+    'berlin': { lat: 52.5200, lng: 13.4050 },
+    'rome': { lat: 41.9028, lng: 12.4964 },
+    'madrid': { lat: 40.4168, lng: -3.7038 },
+    'amsterdam': { lat: 52.3676, lng: 4.9041 },
+    'vienna': { lat: 48.2082, lng: 16.3738 },
+    'prague': { lat: 50.0755, lng: 14.4378 }
+  };
+
+  const searchKey = location.toLowerCase().replace(/,.*/, '').trim();
+  return locationMap[searchKey] || { lat: 47.1410, lng: 9.5209 }; // Default to Vaduz
 }
 
 function getEventImage(category) {
