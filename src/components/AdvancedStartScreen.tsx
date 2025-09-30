@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Search, MapPin, Navigation, Settings, ChevronDown, ChevronRight, X, Plus, Calendar, Sparkles, Target, Send, List } from 'lucide-react';
-import whatsupLogo from 'figma:asset/53533df8d6e95ade93fb4edfef4b39b74dd96a7b.png';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';  
@@ -318,7 +317,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={whatsupLogo} alt="WhatsUP" className="h-8 w-auto" />
+              <span className="text-xl font-bold text-blue-600">What's UP</span>
               <span className="text-sm text-muted-foreground font-medium">
                 Finde einzigartige Events!
               </span>

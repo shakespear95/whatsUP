@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Search, Map, List, Menu, Settings, Plus, MapPin, Zap, Filter, Clock, X, Star, Trash2, RotateCcw, Bolt, Heart } from 'lucide-react';
-import whatsupLogo from 'figma:asset/53533df8d6e95ade93fb4edfef4b39b74dd96a7b.png';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
@@ -331,7 +330,7 @@ export function SimpleNavigationHeader({
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={whatsupLogo} alt="WhatsUP" className="h-8 w-auto" />
+            <span className="text-xl font-bold text-blue-600">What's UP</span>
             <span className="text-sm text-muted-foreground font-medium">
               Finde einzigartige Events!
             </span>
