@@ -642,14 +642,6 @@ export default function App() {
                     </p>
                   </div>
                 )}
-                {filteredEvents.length !== searchResults.length && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      🎯 <strong>Demo-Modus aktiv</strong> - Zeigt {filteredEvents.length} passende Events. 
-                      Manche Ergebnisse wurden durch erweiterte Suche gefunden.
-                    </p>
-                  </div>
-                )}
                 {filteredEvents.map(event => (
                   <EventCard
                     key={event.id}
