@@ -101,9 +101,12 @@ export default function App() {
     // Create session and trigger real search
     const sessionId = createSession(searchFilters.location || 'Unknown');
 
-    // Call real search API
+    // Call Supabase search function
     console.log('🚀 Starting REAL EVENT SEARCH:', searchFilters);
     try {
+      // Import searchEvents from Supabase client
+      const { searchEvents } = await import('./lib/supabase');
+
       const searchData = {
         location: searchFilters.location,
         activity_type: searchFilters.categories[0] || 'Events',
@@ -112,19 +115,22 @@ export default function App() {
         keywords: searchFilters.keywords
       };
 
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchData)
-      });
-
-      const result = await response.json();
+      console.log('📡 Calling Supabase search-events function...');
+      const result = await searchEvents(searchData);
       console.log('✅ Search API Response:', result);
 
       if (result.success && result.data.events) {
-        // Update session with real events
-        setSearchResults(result.data.events);
-        console.log(`🎯 Found ${result.data.events.length} real events`);
+        // Map Supabase events to frontend format
+        const mappedEvents = result.data.events.map((event: any) => ({
+          ...event,
+          image: event.image_url || event.image,
+          exactAddress: event.address || event.exactAddress,
+          ticketLink: event.ticket_link || event.ticketLink,
+          specialFeature: event.special_feature || event.specialFeature
+        }));
+
+        setSearchResults(mappedEvents);
+        console.log(`🎯 Found ${mappedEvents.length} real events`, mappedEvents);
       } else {
         console.log('❌ Search failed:', result.error);
         setSearchResults([]);
@@ -250,6 +256,9 @@ export default function App() {
 
   // Enhanced filtering with real search results
   const filteredEvents = useMemo(() => {
+    console.log('🔍 Filtering events:', searchResults.length, 'results');
+    console.log('📋 Active filters:', filters);
+
     let events = searchResults.filter(event => {
       // Favorites-only filter (applied first)
       if (filters.showFavoritesOnly === true) {
@@ -525,8 +534,9 @@ export default function App() {
       });
     }
 
+    console.log('✅ Filtered events result:', events.length, 'events passed filters');
     return events;
-  }, [filters, favoriteEvents]);
+  }, [searchResults, filters, favoriteEvents]);
 
   // Update active session with results count
   useEffect(() => {
