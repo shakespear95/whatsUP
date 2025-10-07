@@ -121,13 +121,23 @@ export default function App() {
 
       if (result.success && result.data.events) {
         // Map Supabase events to frontend format
-        const mappedEvents = result.data.events.map((event: any) => ({
-          ...event,
-          image: event.image_url || event.image,
-          exactAddress: event.address || event.exactAddress,
-          ticketLink: event.ticket_link || event.ticketLink,
-          specialFeature: event.special_feature || event.specialFeature
-        }));
+        const mappedEvents = result.data.events.map((event: any) => {
+          const ticketLink = event.ticket_link || event.ticketLink;
+
+          return {
+            ...event,
+            image: event.image_url || event.image,
+            exactAddress: event.address || event.exactAddress,
+            ticketLink,
+            specialFeature: event.special_feature || event.specialFeature,
+            // Convert ticketLink to tickets format for EventCard
+            tickets: ticketLink ? {
+              type: 'link',
+              value: ticketLink,
+              label: 'Tickets kaufen'
+            } : event.tickets
+          };
+        });
 
         setSearchResults(mappedEvents);
         console.log(`🎯 Found ${mappedEvents.length} real events`, mappedEvents);

@@ -84,16 +84,16 @@ export function EventCard({
         );
       case 'link':
         return (
-          <Button 
-            variant="link" 
-            size="sm" 
-            className="h-auto p-0 text-blue-600 hover:text-blue-800 font-medium"
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
             onClick={(e) => {
               e.stopPropagation();
               if (tickets.value) window.open(tickets.value, '_blank');
             }}
           >
-            <ExternalLink className="w-3 h-3 mr-1" />
+            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
             {tickets.label || 'Tickets'}
           </Button>
         );
@@ -218,18 +218,21 @@ export function EventCard({
                 )}
               </div>
               
-              {/* Price & Special */}
-              <div className="flex items-center justify-between">
+              {/* Price & Ticket Link */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 {price && (
                   <div className="text-sm font-semibold text-green-600">{price}</div>
                 )}
-                {specialFeature && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-orange-500 text-xs">✨</span>
-                    <span className="text-xs text-orange-600 font-medium truncate">{specialFeature}</span>
-                  </div>
-                )}
+                {renderTicketInfo()}
               </div>
+
+              {/* Special Feature */}
+              {specialFeature && (
+                <div className="flex items-center gap-1">
+                  <span className="text-orange-500 text-xs">✨</span>
+                  <span className="text-xs text-orange-600 font-medium truncate">{specialFeature}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
