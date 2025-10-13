@@ -8,11 +8,19 @@ import { AdvancedStartScreen } from './components/AdvancedStartScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { SearchFilters } from './components/AdvancedSearchDropdown';
 import { Button } from './components/ui/button';
+import { AuthCallback } from './pages/AuthCallback';
+import { useLanguage } from './contexts/LanguageContext';
 
 // No mock events - using real AI-powered search only
 const mockEvents: Event[] = [];
 
 export default function App() {
+  // Check if this is an OAuth callback
+  if (window.location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
+
+  const { t } = useLanguage();
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -676,39 +684,39 @@ export default function App() {
             ) : (
               <div className="text-center py-12 space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Keine Events gefunden 😔</h3>
+                  <h3 className="text-lg font-medium">{t('search.noEvents')}</h3>
                   <p className="text-muted-foreground">
-                    Für die gewählten Filter wurden keine passenden Events gefunden.
+                    {t('search.noEventsText')}
                   </p>
                 </div>
-                
+
                 <div className="space-y-3 max-w-md mx-auto">
                   <div className="text-sm space-y-2">
-                    <p className="font-medium text-foreground">💡 Versuchen Sie:</p>
+                    <p className="font-medium text-foreground">{t('search.suggestions')}</p>
                     <ul className="text-left text-muted-foreground space-y-1">
-                      <li>• Erweitern Sie den Suchradius</li>
-                      <li>• Wählen Sie andere Kategorien</li>
-                      <li>• Ändern Sie den Zeitraum</li>
-                      <li>• Entfernen Sie spezielle Filter</li>
+                      <li>{t('search.expandRadius')}</li>
+                      <li>{t('search.otherCategories')}</li>
+                      <li>{t('search.changeTimeframe')}</li>
+                      <li>{t('search.removeFilters')}</li>
                     </ul>
                   </div>
-                  
+
                   <div className="flex gap-2 justify-center pt-4">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setDemoMode(true)}
                       className="text-xs"
                     >
-                      🎯 Demo-Modus aktivieren
+                      {t('search.activateDemoMode')}
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={handleNewSearch}
                       className="text-xs"
                     >
-                      🔄 Neue Suche
+                      {t('search.newSearch')}
                     </Button>
                   </div>
                 </div>

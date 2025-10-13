@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
 import { SearchFilters } from './AdvancedSearchDropdown';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Simplified Search Session for basic functionality
 export interface SimpleSearchSession {
@@ -97,6 +98,7 @@ export function SimpleNavigationHeader({
   demoMode = true,
   onDemoModeToggle
 }: SimpleNavigationHeaderProps) {
+  const { t } = useLanguage();
   const [isMobile, setIsMobile] = useState(true); // Default to mobile for simplicity
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isQuickFilterOpen, setIsQuickFilterOpen] = useState(false);
@@ -180,32 +182,32 @@ export function SimpleNavigationHeader({
   // Quick Filter Options
   const quickFilterOptions: QuickFilterOptions = {
     time: [
-      { id: 'now', label: 'Jetzt' },
-      { id: 'today', label: 'Heute' },
-      { id: 'tomorrow', label: 'Morgen' },
-      { id: 'thisWeek', label: 'Diese Woche' },
-      { id: 'weekend', label: 'Wochenende' }
+      { id: 'now', label: t('filter.now') },
+      { id: 'today', label: t('filter.today') },
+      { id: 'tomorrow', label: t('filter.tomorrow') },
+      { id: 'thisWeek', label: t('filter.thisWeek') },
+      { id: 'weekend', label: t('filter.weekend') }
     ],
     price: [
-      { id: 'free', label: '🆓 Gratis', icon: '🆓' },
-      { id: 'under20', label: '< 20.-' },
-      { id: 'under50', label: '< 50.-' },
-      { id: 'any', label: 'Egal' }
+      { id: 'free', label: t('filter.free'), icon: '🆓' },
+      { id: 'under20', label: t('filter.under20') },
+      { id: 'under50', label: t('filter.under50') },
+      { id: 'any', label: t('filter.any') }
     ],
     distance: [
-      { id: 'walking', label: 'Zu Fuss' },
-      { id: 'under5', label: '< 5km' },
-      { id: 'under10', label: '< 10km' },
-      { id: 'any', label: 'Egal' }
+      { id: 'walking', label: t('filter.walking') },
+      { id: 'under5', label: t('filter.under5km') },
+      { id: 'under10', label: t('filter.under10km') },
+      { id: 'any', label: t('filter.any') }
     ],
     special: [
-      { id: 'indoor', label: '🏠 Indoor', icon: '🏠' },
-      { id: 'accessible', label: '♿ Barrierefrei', icon: '♿' },
-      { id: 'family', label: '👶 Mit Kindern', icon: '👶' },
-      { id: 'tickets', label: '🎫 Tickets', icon: '🎫' }
+      { id: 'indoor', label: t('filter.indoor'), icon: '🏠' },
+      { id: 'accessible', label: t('filter.accessible'), icon: '♿' },
+      { id: 'family', label: t('filter.withKids'), icon: '👶' },
+      { id: 'tickets', label: t('filter.tickets'), icon: '🎫' }
     ],
     favorites: [
-      { id: 'showFavorites', label: '💖 Favoriten anzeigen', icon: '💖' }
+      { id: 'showFavorites', label: t('filter.showFavorites'), icon: '💖' }
     ]
   };
 
@@ -330,9 +332,9 @@ export function SimpleNavigationHeader({
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-blue-600">What's UP</span>
+            <span className="text-xl font-bold text-blue-600">{t('app.name')}</span>
             <span className="text-sm text-muted-foreground font-medium">
-              Find unique events!
+              {t('nav.findUniqueEvents')}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -357,7 +359,7 @@ export function SimpleNavigationHeader({
                 <MapPin className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium flex-1">{activeSession.location}</span>
                 <Badge variant="secondary" className="text-xs">
-                  {activeSession.resultsCount} Events
+                  {activeSession.resultsCount} {t('search.events')}
                 </Badge>
                 <Clock className="w-4 h-4 text-muted-foreground" />
               </div>
@@ -514,16 +516,16 @@ export function SimpleNavigationHeader({
             onClick={() => onViewModeChange('list')}
           >
             <List className="w-4 h-4 mr-1" />
-            Liste
+            {t('nav.list')}
           </Button>
-          
+
           <Button
             variant={viewMode === 'map' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onViewModeChange('map')}
           >
             <Map className="w-4 h-4 mr-1" />
-            Karte
+            {t('nav.map')}
           </Button>
           
           <DropdownMenu open={isQuickFilterOpen} onOpenChange={setIsQuickFilterOpen}>

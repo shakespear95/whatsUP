@@ -83,10 +83,124 @@ export interface UserPreferences {
   updated_at: string;
 }
 
+export interface UserProfile {
+  user_id: string;
+  full_name: string;
+  phone_number?: string;
+  date_of_birth?: string;
+  location?: string;
+  avatar_url?: string;
+  bio?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // =====================================================
 // Auth Helper Functions
 // =====================================================
 
+// Send OTP code to user's email
+export async function sendEmailOTP(email: string) {
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email: email,
+    options: {
+      shouldCreateUser: true,
+    },
+  });
+
+  if (error) {
+    console.error('Send OTP error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Verify OTP code
+export async function verifyEmailOTP(email: string, token: string) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email,
+    token: token,
+    type: 'email',
+  });
+
+  if (error) {
+    console.error('Verify OTP error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Update user profile in auth metadata (for display name)
+export async function updateUserMetadata(updates: {
+  full_name?: string;
+  avatar_url?: string;
+}) {
+  const { data, error } = await supabase.auth.updateUser({
+    data: updates,
+  });
+
+  if (error) {
+    console.error('Update metadata error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Create or update user profile in database
+export async function createUserProfile(profile: {
+  full_name: string;
+  phone_number?: string;
+  date_of_birth?: string;
+  location?: string;
+}) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Authentication required');
+
+  // First update auth metadata for display name
+  await updateUserMetadata({ full_name: profile.full_name });
+
+  // Then save full profile to database
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .upsert({
+      user_id: user.id,
+      ...profile,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Create profile error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Get user profile from database
+export async function getUserProfile() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows returned
+    console.error('Get profile error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Google OAuth (keeping for future use)
 export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

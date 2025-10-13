@@ -4,6 +4,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { EventDetailModal } from "./EventDetailModal";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface EventCardProps {
   id: string;
@@ -43,15 +44,15 @@ const getCategoryIcon = (category: string) => {
   return Building2; // default icon
 };
 
-export function EventCard({ 
+export function EventCard({
   id,
-  title, 
-  location, 
+  title,
+  location,
   exactAddress,
-  date, 
+  date,
   time,
   image,
-  category, 
+  category,
   description,
   price,
   specialFeature,
@@ -60,6 +61,7 @@ export function EventCard({
   isFavorite = false,
   onToggleFavorite
 }: EventCardProps) {
+  const { t } = useLanguage();
   const [showDetailModal, setShowDetailModal] = useState(false);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -79,7 +81,7 @@ export function EventCard({
         return (
           <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50 dark:bg-green-950">
             <span className="mr-1">🆓</span>
-            Gratis
+            {t('event.free')}
           </Badge>
         );
       case 'link':
@@ -94,14 +96,14 @@ export function EventCard({
             }}
           >
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-            {tickets.label || 'Tickets'}
+            {tickets.label || t('event.tickets')}
           </Button>
         );
       case 'website':
         return (
-          <Button 
-            variant="link" 
-            size="sm" 
+          <Button
+            variant="link"
+            size="sm"
             className="h-auto p-0 text-blue-600 hover:text-blue-800 font-medium"
             onClick={(e) => {
               e.stopPropagation();
@@ -109,7 +111,7 @@ export function EventCard({
             }}
           >
             <Globe className="w-3 h-3 mr-1" />
-            {tickets.label || 'Website'}
+            {tickets.label || t('event.website')}
           </Button>
         );
       case 'phone':
@@ -213,7 +215,7 @@ export function EventCard({
                 {time && (
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground">{time} Uhr</span>
+                    <span className="text-xs text-muted-foreground">{time} {t('event.oclock')}</span>
                   </div>
                 )}
               </div>
@@ -318,7 +320,7 @@ export function EventCard({
               {time && (
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm text-muted-foreground">{time} Uhr</span>
+                  <span className="text-sm text-muted-foreground">{time} {t('event.oclock')}</span>
                 </div>
               )}
             </div>
@@ -343,8 +345,8 @@ export function EventCard({
               <div className="flex-1">
                 {renderTicketInfo()}
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 className="h-8 px-3 text-sm opacity-0 group-hover:opacity-100 transition-opacity ml-3 hover:bg-primary/10"
                 onClick={(e) => {
@@ -352,7 +354,7 @@ export function EventCard({
                   setShowDetailModal(true);
                 }}
               >
-                Details
+                {t('event.details')}
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
