@@ -6,6 +6,10 @@ A modern React-based event discovery application with real-time search, multi-la
 
 ## 🚀 Quick Start
 
+### Production App
+🌐 **Live Website**: https://whats-up-blond.vercel.app
+
+### Local Development
 ```bash
 # Install dependencies
 npm install

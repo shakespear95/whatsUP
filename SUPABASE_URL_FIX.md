@@ -16,7 +16,7 @@ The Supabase project's **Site URL** is currently set to localhost instead of the
 1. Navigate to: **Authentication** → **URL Configuration**
 2. Find **Site URL** field
 3. Change from: `http://localhost:3000`
-4. Change to: `https://whats-up-git-test-shakespears-projects.vercel.app`
+4. Change to: `https://whats-up-blond.vercel.app`
 5. Click **Save**
 
 ### Step 3: Update Redirect URLs
@@ -24,11 +24,13 @@ In the same **URL Configuration** section, under **Redirect URLs**:
 
 Add these URLs (one per line):
 ```
-https://whats-up-git-test-shakespears-projects.vercel.app/**
-https://whats-up-git-test-shakespears-projects.vercel.app/auth/callback
+https://whats-up-blond.vercel.app/**
+https://whats-up-blond.vercel.app/auth/callback
 http://localhost:3000/**
 http://localhost:3000/auth/callback
 ```
+
+**IMPORTANT**: Remove any old URLs containing "git-test" or "shakespears-projects"
 
 **Note**: Keep localhost URLs for local development testing.
 
@@ -45,14 +47,15 @@ The `{{ .ConfirmationURL }}` variable automatically uses the **Site URL** you co
 ## Testing After Fix
 
 1. **Clear browser cache** (or use incognito mode)
-2. Go to: https://whats-up-git-test-shakespears-projects.vercel.app
+2. Go to: https://whats-up-blond.vercel.app
 3. Click the **settings icon** (top right)
 4. Click **"Anmelden"** (Login)
 5. Enter your email address
 6. Click **"Code senden"** (Send Code)
 7. Check your email inbox
-8. Verify the link now points to: `https://whats-up-git-test-shakespears-projects.vercel.app/auth/callback?token=...`
+8. Verify the link now points to: `https://whats-up-blond.vercel.app/auth/callback?token=...`
 9. Click the link and verify you're redirected to the production website
+10. **No Vercel login should be required**
 
 ## Expected Behavior
 
@@ -83,4 +86,4 @@ The `{{ .ConfirmationURL }}` variable automatically uses the **Site URL** you co
 
 - **Supabase Dashboard**: https://supabase.com/dashboard/project/ozezwaqtumofuybazkvo
 - **Auth Settings**: https://supabase.com/dashboard/project/ozezwaqtumofuybazkvo/auth/url-configuration
-- **Production Website**: https://whats-up-git-test-shakespears-projects.vercel.app
+- **Production Website**: https://whats-up-blond.vercel.app
