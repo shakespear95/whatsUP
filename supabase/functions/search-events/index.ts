@@ -233,33 +233,44 @@ async function saveEventsToDatabase(supabaseClient: any, events: any[]) {
 }
 
 async function searchWithLLMs(searchData: SearchRequest) {
-  console.log('🤖 Starting LLM search...');
+  console.log('🤖 Starting intelligent search...');
 
-  // Try real event search first (SerpAPI, Perplexity)
+  // Step 1: Search for real events in parallel (SerpAPI + Perplexity)
   const realEvents = await searchRealEventsInParallel(searchData);
 
   if (realEvents.length > 0) {
-    console.log(`✅ Found ${realEvents.length} real events`);
-    return realEvents;
+    console.log(`✅ Found ${realEvents.length} real events, enhancing with AI...`);
+
+    // Step 2: Enhance real events with AI (better descriptions, validation)
+    const enhancedEvents = await enhanceEventsWithAI(realEvents, searchData);
+    return enhancedEvents;
   }
 
-  console.log('⚠️ No real events found, falling back to AI generation');
+  console.log('⚠️ No real events found, generating with AI');
 
-  // Fallback to AI generation (OpenAI, Gemini)
+  // Fallback: Generate realistic events with AI
   return await generateEventsWithAI(searchData);
 }
 
 async function searchRealEventsInParallel(searchData: SearchRequest) {
-  const providers = [];
+  console.log('🔍 Searching for real events with Perplexity & SerpAPI in parallel...');
 
-  // SerpAPI
+  const providers: { name: string; promise: Promise<any[]> }[] = [];
+
+  // Add SerpAPI search
   if (Deno.env.get('SERP_API_KEY')) {
-    providers.push(searchWithSerpAPI(searchData));
+    providers.push({
+      name: 'SerpAPI',
+      promise: searchWithSerpAPI(searchData),
+    });
   }
 
-  // Perplexity
+  // Add Perplexity search
   if (Deno.env.get('PERPLEXITY_API_KEY')) {
-    providers.push(searchWithPerplexity(searchData));
+    providers.push({
+      name: 'Perplexity',
+      promise: searchWithPerplexity(searchData),
+    });
   }
 
   if (providers.length === 0) {
@@ -267,29 +278,50 @@ async function searchRealEventsInParallel(searchData: SearchRequest) {
     return [];
   }
 
-  const results = await Promise.allSettled(providers);
+  console.log(`🚀 Running ${providers.length} search APIs in parallel...`);
+
+  // Execute all searches in parallel
+  const results = await Promise.allSettled(providers.map(p => p.promise));
   const allEvents: any[] = [];
 
   results.forEach((result, index) => {
-    if (result.status === 'fulfilled' && result.value) {
-      console.log(`✅ Provider ${index + 1} found ${result.value.length} events`);
+    const providerName = providers[index].name;
+
+    if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+      console.log(`✅ ${providerName} found ${result.value.length} events`);
       allEvents.push(...result.value);
+    } else if (result.status === 'rejected') {
+      console.error(`❌ ${providerName} failed:`, result.reason);
+    } else {
+      console.log(`⚠️ ${providerName} returned no events`);
     }
   });
 
-  return deduplicateEvents(allEvents).slice(0, 10);
+  if (allEvents.length === 0) {
+    console.log('❌ No events found from any provider');
+    return [];
+  }
+
+  // Deduplicate and return up to 15 best events
+  const uniqueEvents = deduplicateEvents(allEvents);
+  console.log(`📊 Total unique events after deduplication: ${uniqueEvents.length}`);
+
+  return uniqueEvents.slice(0, 15); // Increased from 10 to 15 for better results
 }
 
 async function searchWithSerpAPI(searchData: SearchRequest) {
   const SERP_API_KEY = Deno.env.get('SERP_API_KEY');
   const query = `"${searchData.activity_type}" events "${searchData.location}" ${searchData.timeframe} 2025 tickets`;
 
+  console.log(`🔍 SerpAPI query: ${query}`);
+
   const response = await fetch(
-    `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=10`
+    `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=20`
   );
 
   if (!response.ok) {
-    throw new Error(`SerpAPI error: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`SerpAPI error ${response.status}: ${errorText}`);
   }
 
   const data = await response.json();
@@ -300,10 +332,11 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
   const events: any[] = [];
 
   if (serpData.organic_results) {
-    serpData.organic_results.slice(0, 6).forEach((result: any, index: number) => {
+    // Process more results (up to 10 instead of 6)
+    serpData.organic_results.slice(0, 10).forEach((result: any, index: number) => {
       if (result.title && result.snippet) {
         events.push({
-          title: result.title,
+          title: cleanEventTitle(result.title),
           description: result.snippet,
           date: getDateInTimeframe(searchData.timeframe, index),
           time: getRandomTime(),
@@ -325,12 +358,15 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
     });
   }
 
+  console.log(`📊 SerpAPI processed ${events.length} events`);
   return events;
 }
 
 async function searchWithPerplexity(searchData: SearchRequest) {
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-  const query = `Find real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}. Include event names, dates, venues, and prices.`;
+  const query = `Find 10 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} in 2025. Include event names, dates, venues, ticket prices, and website links. Return JSON array format.`;
+
+  console.log(`🔍 Perplexity query: ${query}`);
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
@@ -343,20 +379,21 @@ async function searchWithPerplexity(searchData: SearchRequest) {
       messages: [
         {
           role: 'system',
-          content: 'You are a real event finder. Return only real events in JSON format.',
+          content: 'You are a real event finder with web access. Search for real events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website.',
         },
         {
           role: 'user',
           content: query,
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 3000, // Increased for more results
       temperature: 0.1,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Perplexity error: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Perplexity error ${response.status}: ${errorText}`);
   }
 
   const data = await response.json();
@@ -374,7 +411,7 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
 
       eventArray.forEach((event: any) => {
         events.push({
-          title: event.title || event.name || 'Event',
+          title: cleanEventTitle(event.title || event.name || 'Event'),
           description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
           date: event.date || getDateInTimeframe(searchData.timeframe, 0),
           time: event.time || getRandomTime(),
@@ -393,12 +430,65 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
           image_url: getEventImage(searchData.activity_type),
         });
       });
+    } else {
+      console.log('⚠️ Perplexity did not return JSON format, parsing text...');
+      // Try to extract event info from plain text if no JSON
+      const lines = content.split('\n');
+      let currentEvent: any = {};
+
+      lines.forEach((line) => {
+        if (line.match(/^\d+\./)) {
+          // New event starting
+          if (currentEvent.title) {
+            events.push(formatPerplexityEvent(currentEvent, searchData));
+          }
+          currentEvent = { title: line.replace(/^\d+\.\s*/, '').trim() };
+        } else if (line.includes('Date:')) {
+          currentEvent.date = line.replace(/Date:\s*/i, '').trim();
+        } else if (line.includes('Venue:')) {
+          currentEvent.venue = line.replace(/Venue:\s*/i, '').trim();
+        } else if (line.includes('Price:')) {
+          currentEvent.price = line.replace(/Price:\s*/i, '').trim();
+        }
+      });
+
+      if (currentEvent.title) {
+        events.push(formatPerplexityEvent(currentEvent, searchData));
+      }
     }
   } catch (error) {
     console.error('Error parsing Perplexity results:', error);
   }
 
-  return events.slice(0, 5);
+  console.log(`📊 Perplexity processed ${events.length} events`);
+  return events.slice(0, 10); // Return up to 10 events
+}
+
+async function enhanceEventsWithAI(events: any[], searchData: SearchRequest) {
+  console.log(`🔧 Enhancing ${events.length} real events with AI...`);
+
+  // If we have OpenAI or Gemini, enhance the descriptions and details
+  if (Deno.env.get('OPENAI_API_KEY')) {
+    try {
+      return await enhanceWithOpenAI(events, searchData);
+    } catch (error) {
+      console.error('OpenAI enhancement failed:', error);
+      return events; // Return original events if enhancement fails
+    }
+  }
+
+  if (Deno.env.get('GOOGLE_AI_API_KEY')) {
+    try {
+      return await enhanceWithGemini(events, searchData);
+    } catch (error) {
+      console.error('Gemini enhancement failed:', error);
+      return events; // Return original events if enhancement fails
+    }
+  }
+
+  // No AI available, return events as-is
+  console.log('⚠️ No AI API available for enhancement, returning raw events');
+  return events;
 }
 
 async function generateEventsWithAI(searchData: SearchRequest) {
@@ -507,6 +597,101 @@ async function generateWithGemini(searchData: SearchRequest) {
     real_event: false,
     image_url: getEventImage(searchData.activity_type),
   }));
+}
+
+async function enhanceWithOpenAI(events: any[], searchData: SearchRequest) {
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+
+  const prompt = `You are an event data enhancer. Below are real events found from web search. Please improve their descriptions, ensure consistency, and fill in any missing details while keeping the core information accurate.
+
+Search Context: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}
+
+Events to enhance:
+${JSON.stringify(events, null, 2)}
+
+Return a JSON array with the same structure but improved descriptions, validated dates, and better formatting. Keep ticket_link, source, and real_event fields unchanged.`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You enhance event data by improving descriptions and ensuring consistency. Return valid JSON only.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.3, // Lower temperature for consistency
+      max_tokens: 3000,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI enhancement error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0].message.content;
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+
+  if (!jsonMatch) {
+    console.log('⚠️ OpenAI enhancement returned invalid JSON, using original events');
+    return events;
+  }
+
+  const enhancedEvents = JSON.parse(jsonMatch[0]);
+  console.log(`✅ OpenAI enhanced ${enhancedEvents.length} events`);
+  return enhancedEvents;
+}
+
+async function enhanceWithGemini(events: any[], searchData: SearchRequest) {
+  const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+
+  const prompt = `You are an event data enhancer. Below are real events found from web search. Please improve their descriptions, ensure consistency, and fill in any missing details while keeping the core information accurate.
+
+Search Context: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}
+
+Events to enhance:
+${JSON.stringify(events, null, 2)}
+
+Return a JSON array with the same structure but improved descriptions, validated dates, and better formatting. Keep ticket_link, source, and real_event fields unchanged.`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_AI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Gemini enhancement error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.candidates[0].content.parts[0].text;
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+
+  if (!jsonMatch) {
+    console.log('⚠️ Gemini enhancement returned invalid JSON, using original events');
+    return events;
+  }
+
+  const enhancedEvents = JSON.parse(jsonMatch[0]);
+  console.log(`✅ Gemini enhanced ${enhancedEvents.length} events`);
+  return enhancedEvents;
 }
 
 function generateMockEvents(searchData: SearchRequest): any[] {
@@ -629,6 +814,38 @@ function deduplicateEvents(events: any[]): any[] {
     seen.add(key);
     return true;
   });
+}
+
+function cleanEventTitle(title: string): string {
+  // Remove common SEO junk from event titles
+  return title
+    .replace(/\s*-\s*Eventbrite.*$/i, '')
+    .replace(/\s*\|\s*Tickets.*$/i, '')
+    .replace(/\s*-\s*Ticketmaster.*$/i, '')
+    .replace(/\s*-\s*Buy Tickets.*$/i, '')
+    .trim();
+}
+
+function formatPerplexityEvent(event: any, searchData: SearchRequest) {
+  return {
+    title: cleanEventTitle(event.title || 'Event'),
+    description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
+    date: event.date || getDateInTimeframe(searchData.timeframe, 0),
+    time: event.time || getRandomTime(),
+    location: searchData.location,
+    venue: event.venue || `${searchData.location} Venue`,
+    address: event.address || searchData.location,
+    price: event.price || 'See website',
+    category: searchData.activity_type,
+    special_feature: 'Real event from web search',
+    organizer: event.organizer || 'Event Organizer',
+    capacity: 'See website',
+    tags: [searchData.activity_type.toLowerCase(), 'real-event'],
+    ticket_link: event.website || event.url || null,
+    source: 'Perplexity',
+    real_event: true,
+    image_url: getEventImage(searchData.activity_type),
+  };
 }
 
 function getEventImage(category: string): string {
