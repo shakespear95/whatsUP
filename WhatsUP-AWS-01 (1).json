@@ -1,0 +1,454 @@
+{
+  "name": "WhatsUP-AWS-01",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Führe eine umfassende Event-Recherche durch für folgende Kriterien:\n\n**🎯 SUCHPARAMETER:**\n- 📍 Standort: {{ $json.location }}\n- 🎭 Event-Art: {{ $json.activity_type }}\n- 📅 Datum: {{ $json.timeframe }}\n- 📏 Radius: {{ $json.radius || '15' }}km\n- 🔍 Keywords: {{ $json.keywords || 'Keine' }}\n- 📧 Email: {{ $json.email || 'Nicht angegeben' }}\n\n**📋 AUSGABEFORMAT FÜR JEDES EVENT:**\n1. 🎭 **Event-Name & Kategorie**\n2. 📍 **Exakte Adresse & Entfernung vom Suchort**\n3. ⏰ **Datum, Uhrzeit, Dauer**\n4. 💰 **Preisinformation** (kostenlos/Preis/Preisbereich)\n5. 📝 **Beschreibung** (2-3 Sätze, Highlights)\n6. 🌤️ **Wetterabhängigkeit** (Indoor/Outdoor/Überdacht)\n7. ⭐ **Besonderheiten & Alleinstellungsmerkmale**\n8. 🎫 **Buchung/Anmeldung** (Website, Telefon, Walk-in)\n9. 📊 **Quelle & Aktualität** (Wo gefunden, Verifikation mit genauer Linkangabe)\n\n**🔍 RECHERCHE-AUFTRAG:**\n- Nutze alle verfügbaren Tools (Perplexity, Weather, Maps)\n- Hole aktuelle Wetterdaten für {{ $json.location }} ein\n- Bestimme genaue Koordinaten für den Standort\n- Finde SOWOHL bekannte ALS AUCH versteckte Geheimtipp-Events\n- Priorisiere Events die exakt den Kriterien entsprechen\n- Berücksichtige Wetter bei Outdoor-Events\n\n**📊 STRUKTUR:**\n- Beginne mit Wetter-Summary für {{ $json.location }}\n- Gruppiere Events nach Kategorien\n- Sortiere nach Relevanz & Qualität\n- Mindestens 8-12 Events wenn verfügbar\n- Schließe ab mit \"**🎯 PERFEKTE MATCHES**\" (Top 3 Empfehlungen)\n\nFühre eine gründliche, multi-source Recherche durch!\n\nHinweis: Die Zeit ist im moment der Anfrage {{ $now }}",
+        "options": {
+          "systemMessage": "=# Role: Expert Local Event Discovery Agent\n\nYou are a specialized local Event Discovery Expert. Use the Perplexity Sonar search tool and our prompt to find:\n- Local ecosystems and community dynamics\n- Hidden gems beyond mainstream platforms\n- Cultural peculiarities and seasonal patterns\n- Current event trends and emerging activities\n\n## Your Superpowers:\n✅ **Multi-Source Research**: Combine various data sources intelligently\n✅ **Hidden Gems Discovery**: Find local insider events that others overlook\n✅ **Weather Intelligence**: Consider weather impact on activities\n✅ **Geographic Precision**: Use exact coordinates for precise distance calculation\n✅ **Real-time Validation**: Verify event timeliness and availability\n\n## Research Methodology:\n1. **Location Intelligence**: Determine exact coordinates and local context\n2. **Weather Analysis**: Obtain current weather data and consider the forecast\n3. **Multi-Platform Search**: Search mainstream + niche + community sources\n4. **Quality Filter**: Check timeliness, relevance, and completeness\n5. **Distance Calculation**: Calculate exact distances from the search location\n6. **Cultural Context**: Consider local peculiarities and traditions\n\n## Output Excellence:\n- **Structured & Scannable**: Clear categories with emojis\n- **Actionable Information**: All necessary details for immediate booking\n- **Mix Strategy**: 70% reliable events + 30% hidden gems\n- **Weather-Adaptive**: Prioritize weather-appropriate activities\n- **Quality over Quantity**: Better 8 perfect than 20 mediocre events\n\n## Important:\n- Use ALL available tools for comprehensive research\n- Avoid outdated or canceled events\n- Provide concrete, actionable booking information\n- Consider user's budget preferences\n- Offer both well-known and unique local experiences\n- IMPORTANT: Do not output any of your own model considerations\n- The current time is: {{ $now }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        64
+      ],
+      "id": "067ec13f-491c-4aad-9b65-332b39b2bbe8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-3-7-sonnet-20250219",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 3.7"
+        },
+        "options": {
+          "maxTokensToSample": 16000,
+          "thinking": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -400,
+        352
+      ],
+      "id": "37f3047a-dca1-497e-829f-06f5ddc7d326",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "Fpkb0WyM1yKI6O9l",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Tools (Deep Research / Weather API / Geolocation Google Maps API)\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/sticky-notes/)",
+        "height": 300,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        336
+      ],
+      "typeVersion": 1,
+      "id": "a0b5f5da-8f2b-4e3d-b50e-7ae809063b0e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "cityName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('City', ``, 'string') }}",
+        "language": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Language', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.openWeatherMapTool",
+      "typeVersion": 1,
+      "position": [
+        128,
+        480
+      ],
+      "id": "8b25d057-8ffa-4a29-9eb7-e75cfac67fcc",
+      "name": "OpenWeatherMap",
+      "credentials": {
+        "openWeatherMapApi": {
+          "id": "MIPvxhZ2kGzliAY6",
+          "name": "OpenWeatherMap account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const markdown = $input.all()[0]?.json?.output?.[1]?.text || '';\n\nfunction formatMarkdownToHTML(text) {\n    let html = text;\n\n    // 1. ERST Headings ersetzen (längste zuerst!)\n    html = html.replace(/^##### (.*$)/gm, '<h5 class=\"h5\">$1</h5>');\n    html = html.replace(/^#### (.*$)/gm, '<h4 class=\"h4\">$1</h4>');\n    html = html.replace(/^### (.*$)/gm, '<h3 class=\"h3\">$1</h3>');\n    html = html.replace(/^## (.*$)/gm, '<h2 class=\"h2\">$1</h2>');\n    html = html.replace(/^# (.*$)/gm, '<h1 class=\"h1\">$1</h1>');\n\n    // 2. Bold/Strong Text\n    html = html.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');\n\n    // 3. Listen formatieren (vor <br> Ersetzung!)\n    html = html.replace(/^- (.*$)/gm, '<li class=\"list-item\">$1</li>');\n\n    // 4. Zeilenschaltungen zu <br>\n    html = html.replace(/\\n/g, '<br>');\n\n    // 5. Listen in <ul> Container wrappen\n    html = html.replace(/(<li class=\"list-item\">.*?<\\/li>(<br>)*)+/g, function(match) {\n        return '<ul class=\"event-list\">' + match.replace(/<br>/g, '') + '</ul>';\n    });\n\n    // 6. Doppelte <br> nach Headings entfernen\n    html = html.replace(/(<\\/h[1-6]>)<br>/g, '$1');\n\n    // 7. Mehrfache <br> reduzieren\n    html = html.replace(/(<br>){3,}/g, '<br><br>');\n\n    return html;\n}\n\n// CSS Styles hinzufügen für bessere Formatierung\nconst styledHTML = `\n<div class=\"markdown-content\">\n    <style>\n        .markdown-content {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n            line-height: 1.6;\n            color: #333;\n        }\n        .markdown-content .h1 {\n            color: #667eea;\n            font-size: 1.8em;\n            margin: 20px 0 15px 0;\n            border-bottom: 2px solid #667eea;\n            padding-bottom: 8px;\n        }\n        .markdown-content .h2 {\n            color: #764ba2;\n            font-size: 1.5em;\n            margin: 18px 0 12px 0;\n            border-bottom: 1px solid #e9ecef;\n            padding-bottom: 5px;\n        }\n        .markdown-content .h3 {\n            color: #495057;\n            font-size: 1.3em;\n            margin: 15px 0 10px 0;\n        }\n        .markdown-content .h4 {\n            color: #6c757d;\n            font-size: 1.1em;\n            margin: 12px 0 8px 0;\n            font-weight: 600;\n        }\n        .markdown-content .event-list {\n            margin: 10px 0;\n            padding-left: 0;\n            list-style: none;\n        }\n        .markdown-content .list-item {\n            margin: 8px 0;\n            padding: 8px 12px;\n            background: #f8f9fa;\n            border-left: 3px solid #667eea;\n            border-radius: 0 5px 5px 0;\n        }\n        .markdown-content strong {\n            color: #495057;\n            font-weight: 600;\n        }\n    </style>\n    ${formatMarkdownToHTML(markdown)}\n</div>\n`;\n\n// IMPORTANT FIX: Pass through the original JSON data and add the new 'html' property\n// This ensures userId, location, etc., are not lost.\nconst originalItemJson = $input.all()[0]?.json; // Get the full JSON from the input item\n\nreturn [{\n  json: {\n    ...originalItemJson, // Spread operator to include all existing properties (like userId)\n    html: styledHTML      // Add the newly generated HTML\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        64
+      ],
+      "id": "5d275829-b27d-4bdb-a97d-450f7ff446dc",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message0_Text', ``, 'string') }}"
+            }
+          ]
+        },
+        "simplify": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify_Output', ``, 'boolean') }}",
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexityTool",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        480
+      ],
+      "id": "473c0081-4fec-4fa0-aed8-f1a24fd26170",
+      "name": "Message a model in Perplexity",
+      "credentials": {
+        "perplexityApi": {
+          "id": "VUMTYs1YcyaZrNoj",
+          "name": "Perplexity account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "event-search",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://shakespear95.github.io"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        -160
+      ],
+      "id": "df4f61f0-b644-430f-a262-8ea0c59be8a4",
+      "name": "Webhook",
+      "webhookId": "32d1e17e-e3df-4196-b228-0194d7d19eba"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"html\": \"{{ $json.html }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        560,
+        112
+      ],
+      "id": "654410fe-8a02-4f0d-8c2d-ee3d5b5253a9",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "44918df3-d30d-4adb-b995-e12ddd7cc0fd",
+              "name": "location",
+              "value": "={{ $json.body.location }}",
+              "type": "string"
+            },
+            {
+              "id": "e6cae418-a19c-400e-8884-2635104753ec",
+              "name": "activity_type",
+              "value": "={{ $json.body.activityType }}",
+              "type": "string"
+            },
+            {
+              "id": "0bdf6237-b0ec-4734-89e5-f0cccf1e48ec",
+              "name": "timeframe",
+              "value": "={{ $json.body.timeframe }}",
+              "type": "string"
+            },
+            {
+              "id": "424072b0-6edb-48ba-9339-74a000622fb6",
+              "name": "radius",
+              "value": "={{ $json.body.radius }}",
+              "type": "string"
+            },
+            {
+              "id": "741b7f96-7809-4683-921c-d730c89e38f1",
+              "name": "keywords",
+              "value": "={{ $json.body.keywords }}",
+              "type": "string"
+            },
+            {
+              "id": "33402c0d-4295-498b-a9d7-55f3815b6477",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        64
+      ],
+      "id": "504bb68f-77e4-44eb-af17-027e5bcf2f9e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "tableName": "EventFinderUserSearches",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "userId",
+              "fieldValue": "={{ $json.userId }}"
+            },
+            {
+              "fieldId": "searchTimestamp",
+              "fieldValue": "={{ new Date().getTime() }}"
+            },
+            {
+              "fieldId": "searchId",
+              "fieldValue": "={{ $json.userId + '-' + new Date().getTime() }}"
+            },
+            {
+              "fieldId": "searchParams",
+              "fieldValue": "={{ JSON.stringify({     \"location\": $json.location,     \"activity_type\": $json.activity_type,     \"timeframe\": $json.timeframe,     \"radius\": $json.radius,     \"keywords\": $json.keywords,     \"email\": $json.email }) | raw }}"
+            },
+            {
+              "fieldId": "searchResultsHtml",
+              "fieldValue": "={{ $json.html }},\n{{ $execution.id }},\n{{ $execution.resumeUrl }}\n{{ $today }}\n{{ $now }}\n{{ $workflow.id }}"
+            },
+            {
+              "fieldId": "searchDate",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "eventEndDate",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsDynamoDb",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -240
+      ],
+      "id": "2e23d118-335d-4db4-a805-279fc12300e9",
+      "name": "Create or update an item",
+      "credentials": {
+        "aws": {
+          "id": "GGDxg9PxVcEOKZeh",
+          "name": "AWS account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.userId }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "5636c584-0da5-4279-9bc8-f053af26234e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "60d84ea1-d44a-412a-b298-5cabc2062930",
+                    "leftValue": 0,
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        64
+      ],
+      "id": "a9bb632d-c695-4ea7-8582-7229e24daf94",
+      "name": "Switch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model in Perplexity": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Create or update an item": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create or update an item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7f59f82a-f38d-4608-a388-5c02c07a2ecf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "96e40c91a12f7e6d7499b6b450b1687fbb6d5cfef1ebb29ce5bdbcda9adebcf2"
+  },
+  "id": "Vtx4tICFj8B1MADB",
+  "tags": []
+}
