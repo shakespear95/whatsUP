@@ -170,7 +170,7 @@ async function checkEventCache(supabaseClient: any, searchData: SearchRequest) {
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: true })
-    .limit(20);
+    .limit(30); // Increased cache limit to support more results
 
   if (error) {
     console.error('Cache check error:', error);
@@ -233,43 +233,104 @@ async function saveEventsToDatabase(supabaseClient: any, events: any[]) {
 }
 
 async function searchWithLLMs(searchData: SearchRequest) {
-  console.log('🤖 Starting intelligent search...');
+  console.log('🤖 Starting LAYERED intelligent search...');
 
-  // Step 1: Search for real events in parallel (SerpAPI + Perplexity)
-  const realEvents = await searchRealEventsInParallel(searchData);
+  // LAYER 1: Get Weather Data (for context)
+  const weather = await getWeatherData(searchData.location);
+  console.log(`🌤️ Weather: ${weather.condition}, ${weather.temperature}°C - ${weather.description}`);
+
+  // LAYER 2: Deep Search with Real Event APIs in parallel
+  const realEvents = await searchRealEventsInParallel(searchData, weather);
 
   if (realEvents.length > 0) {
-    console.log(`✅ Found ${realEvents.length} real events, enhancing with AI...`);
+    console.log(`✅ Found ${realEvents.length} real events, enhancing with AI + weather context...`);
 
-    // Step 2: Enhance real events with AI (better descriptions, validation)
-    const enhancedEvents = await enhanceEventsWithAI(realEvents, searchData);
+    // LAYER 3: Enhance real events with AI (better descriptions, weather-aware filtering)
+    const enhancedEvents = await enhanceEventsWithAI(realEvents, searchData, weather);
     return enhancedEvents;
   }
 
-  console.log('⚠️ No real events found, generating with AI');
+  console.log('⚠️ No real events found, generating with AI + weather context');
 
-  // Fallback: Generate realistic events with AI
-  return await generateEventsWithAI(searchData);
+  // Fallback: Generate realistic events with AI + weather
+  return await generateEventsWithAI(searchData, weather);
 }
 
-async function searchRealEventsInParallel(searchData: SearchRequest) {
-  console.log('🔍 Searching for real events with Perplexity & SerpAPI in parallel...');
+// =====================================================
+// Weather API Integration
+// =====================================================
+
+async function getWeatherData(location: string) {
+  const WEATHER_API_KEY = Deno.env.get('OPENWEATHER_API_KEY');
+
+  if (!WEATHER_API_KEY) {
+    console.log('⚠️ No weather API key, skipping weather data');
+    return {
+      condition: 'unknown',
+      temperature: 20,
+      description: 'Weather data unavailable',
+      indoor_recommended: false,
+    };
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Weather API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const condition = data.weather[0].main.toLowerCase(); // rain, clear, clouds, etc.
+    const temperature = Math.round(data.main.temp);
+    const description = data.weather[0].description;
+
+    // Determine if indoor events are recommended
+    const badWeather = ['rain', 'thunderstorm', 'snow', 'drizzle'];
+    const indoor_recommended = badWeather.includes(condition);
+
+    if (indoor_recommended) {
+      console.log(`⚠️ Bad weather detected (${condition}) - Will prioritize INDOOR events!`);
+    }
+
+    return {
+      condition,
+      temperature,
+      description,
+      indoor_recommended,
+    };
+  } catch (error) {
+    console.error('Weather API error:', error);
+    return {
+      condition: 'unknown',
+      temperature: 20,
+      description: 'Weather data unavailable',
+      indoor_recommended: false,
+    };
+  }
+}
+
+async function searchRealEventsInParallel(searchData: SearchRequest, weather: any) {
+  console.log('🔍 Searching for real events with Perplexity & SerpAPI in parallel (weather-aware)...');
 
   const providers: { name: string; promise: Promise<any[]> }[] = [];
 
-  // Add SerpAPI search
+  // Add SerpAPI search (enhanced with hidden gems)
   if (Deno.env.get('SERP_API_KEY')) {
     providers.push({
       name: 'SerpAPI',
-      promise: searchWithSerpAPI(searchData),
+      promise: searchWithSerpAPI(searchData, weather),
     });
   }
 
-  // Add Perplexity search
+  // Add Perplexity search (weather-aware)
   if (Deno.env.get('PERPLEXITY_API_KEY')) {
     providers.push({
       name: 'Perplexity',
-      promise: searchWithPerplexity(searchData),
+      promise: searchWithPerplexity(searchData, weather),
     });
   }
 
@@ -302,21 +363,24 @@ async function searchRealEventsInParallel(searchData: SearchRequest) {
     return [];
   }
 
-  // Deduplicate and return up to 15 best events
+  // Deduplicate and return up to 20 best events
   const uniqueEvents = deduplicateEvents(allEvents);
   console.log(`📊 Total unique events after deduplication: ${uniqueEvents.length}`);
 
-  return uniqueEvents.slice(0, 15); // Increased from 10 to 15 for better results
+  return uniqueEvents.slice(0, 20); // Return 20 events per search
 }
 
-async function searchWithSerpAPI(searchData: SearchRequest) {
+async function searchWithSerpAPI(searchData: SearchRequest, weather: any) {
   const SERP_API_KEY = Deno.env.get('SERP_API_KEY');
-  const query = `"${searchData.activity_type}" events "${searchData.location}" ${searchData.timeframe} 2025 tickets`;
 
-  console.log(`🔍 SerpAPI query: ${query}`);
+  // Enhanced query with hidden gems and weather context
+  const weatherContext = weather.indoor_recommended ? 'indoor' : '';
+  const query = `"${searchData.activity_type}" ${weatherContext} events "${searchData.location}" ${searchData.timeframe} 2025 tickets "hidden gems" OR "local favorites"`;
+
+  console.log(`🔍 SerpAPI query (enhanced + weather-aware): ${query}`);
 
   const response = await fetch(
-    `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=20`
+    `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=30`
   );
 
   if (!response.ok) {
@@ -332,8 +396,8 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
   const events: any[] = [];
 
   if (serpData.organic_results) {
-    // Process more results (up to 10 instead of 6)
-    serpData.organic_results.slice(0, 10).forEach((result: any, index: number) => {
+    // Process more results (up to 15 for better variety)
+    serpData.organic_results.slice(0, 15).forEach((result: any, index: number) => {
       if (result.title && result.snippet) {
         events.push({
           title: cleanEventTitle(result.title),
@@ -362,9 +426,16 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
   return events;
 }
 
-async function searchWithPerplexity(searchData: SearchRequest) {
+async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-  const query = `Find 10 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} in 2025. Include event names, dates, venues, ticket prices, and website links. Return JSON array format.`;
+
+  // Add weather context to query if available
+  const weatherContext = weather.indoor_recommended
+    ? 'Focus on INDOOR events due to bad weather.'
+    : 'Include both indoor and outdoor events.';
+
+  const currentDate = new Date().toISOString().split('T')[0];
+  const query = `Find 15 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} starting from ${currentDate}. ${weatherContext} Include event names, FUTURE dates (not past dates), venues, ticket prices, and official website links. Return JSON array format with accurate information.`;
 
   console.log(`🔍 Perplexity query: ${query}`);
 
@@ -375,19 +446,20 @@ async function searchWithPerplexity(searchData: SearchRequest) {
       'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.1-sonar-small-128k-online',
+      model: 'llama-3.1-sonar-large-128k-online', // Upgraded to large model for better results
       messages: [
         {
           role: 'system',
-          content: 'You are a real event finder with web access. Search for real events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website.',
+          content: 'You are a real event finder with web access. Search thoroughly for real, upcoming events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website. Take your time to find quality events.',
         },
         {
           role: 'user',
           content: query,
         },
       ],
-      max_tokens: 3000, // Increased for more results
-      temperature: 0.1,
+      max_tokens: 5000, // Increased for more comprehensive results
+      temperature: 0.2, // Slightly increased for variety
+      search_recency_filter: 'month', // Only recent web results
     }),
   });
 
@@ -461,7 +533,7 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
   }
 
   console.log(`📊 Perplexity processed ${events.length} events`);
-  return events.slice(0, 10); // Return up to 10 events
+  return events.slice(0, 15); // Return up to 15 events
 }
 
 async function enhanceEventsWithAI(events: any[], searchData: SearchRequest) {
@@ -696,7 +768,7 @@ Return a JSON array with the same structure but improved descriptions, validated
 
 function generateMockEvents(searchData: SearchRequest): any[] {
   const events = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 20; i++) {
     events.push({
       title: `${searchData.activity_type} Event ${i + 1}`,
       description: `Exciting ${searchData.activity_type} event in ${searchData.location}`,
@@ -721,7 +793,7 @@ function generateMockEvents(searchData: SearchRequest): any[] {
 // =====================================================
 
 function createEventPrompt(searchData: SearchRequest): string {
-  return `Generate 5 realistic events for: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}. Return JSON array with: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, organizer, capacity, special_feature, tags.`;
+  return `Generate 20 realistic events for: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}. Return JSON array with: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, organizer, capacity, special_feature, tags.`;
 }
 
 function getDateRange(timeframe: string) {
@@ -763,23 +835,32 @@ function getDateInTimeframe(timeframe: string, offset: number): string {
 
   switch (timeframe.toLowerCase()) {
     case 'today':
+      // Keep events within today, spaced a few hours apart
       date.setHours(date.getHours() + offset * 2);
       break;
     case 'this week':
-      date.setDate(now.getDate() + offset);
+      // Ensure dates are always in the future, starting from tomorrow
+      date.setDate(now.getDate() + 1 + offset);
       break;
     case 'next week':
       date.setDate(now.getDate() + 7 + offset);
       break;
     case 'this month':
-      date.setDate(now.getDate() + offset * 3);
+      // Ensure dates are always in the future, starting from tomorrow
+      date.setDate(now.getDate() + 1 + offset * 3);
       break;
     case 'next month':
       date.setMonth(now.getMonth() + 1);
-      date.setDate(offset * 4 + 1);
+      date.setDate(Math.min(offset * 4 + 1, 28)); // Avoid invalid dates
       break;
     default:
-      date.setDate(now.getDate() + offset * 2);
+      // Default to future dates starting tomorrow
+      date.setDate(now.getDate() + 1 + offset * 2);
+  }
+
+  // Ensure we never return a past date
+  if (date < now) {
+    date.setDate(now.getDate() + 1 + offset);
   }
 
   return date.toISOString().split('T')[0];

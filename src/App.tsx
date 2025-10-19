@@ -10,6 +10,7 @@ import { SearchFilters } from './components/AdvancedSearchDropdown';
 import { Button } from './components/ui/button';
 import { AuthCallback } from './pages/AuthCallback';
 import { useLanguage } from './contexts/LanguageContext';
+import { SearchLoadingAnimation } from './components/SearchLoadingAnimation';
 
 // No mock events - using real AI-powered search only
 const mockEvents: Event[] = [];
@@ -28,6 +29,8 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   // Demo mode removed - using AI-powered search
   const [searchResults, setSearchResults] = useState<Event[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState<string>('Initialisiere Suche...');
 
   // Favorites management
   const [favoriteEvents, setFavoriteEvents] = useState<Set<string>>(new Set());
@@ -94,6 +97,9 @@ export default function App() {
 
   const handleStartSearch = async (searchFilters: SearchFilters) => {
     setFilters(searchFilters);
+    setIsSearching(true);
+    setSearchProgress('🔍 Suche wird gestartet...');
+    setShowStartScreen(false);
 
     // Add to search history
     const historyEntry: SearchHistoryEntry = {
@@ -112,22 +118,73 @@ export default function App() {
     // Call Supabase search function
     console.log('🚀 Starting REAL EVENT SEARCH:', searchFilters);
     try {
+      setSearchProgress('🌤️ Wetterdaten werden abgerufen...');
       // Import searchEvents from Supabase client
       const { searchEvents } = await import('./lib/supabase');
 
+      // Map German categories to English for API
+      const categoryMap: Record<string, string> = {
+        'konzerte': 'Concerts & Music',
+        'buehne': 'Stage & Theater',
+        'kunst': 'Art & Museums',
+        'familie': 'Family & Kids',
+        'sport': 'Sports & Recreation',
+        'messen': 'Fairs & Markets',
+        'kulinarik': 'Food & Culinary',
+        'wissen': 'Knowledge & Workshops',
+        'unique-underground': 'Unique & Underground',
+        'community-spontan': 'Community & Spontaneous',
+        'random-weird': 'Random & Weird'
+      };
+
+      // Get the first category and map it, or combine multiple
+      const primaryCategory = searchFilters.categories[0]
+        ? categoryMap[searchFilters.categories[0]] || searchFilters.categories[0]
+        : 'Events';
+
+      // Combine categories and subcategories into keywords for better search
+      const categoryKeywords = [
+        ...searchFilters.categories.map(c => categoryMap[c] || c),
+        ...searchFilters.subcategories
+      ].join(', ');
+
+      const combinedKeywords = [searchFilters.keywords, categoryKeywords]
+        .filter(Boolean)
+        .join(', ');
+
       const searchData = {
         location: searchFilters.location,
-        activity_type: searchFilters.categories[0] || 'Events',
-        timeframe: 'this week',
+        activity_type: primaryCategory,
+        timeframe: searchFilters.timeRange || 'this week',
         budget: searchFilters.budget?.max ? `$0-${searchFilters.budget.max}` : undefined,
-        keywords: searchFilters.keywords
+        keywords: combinedKeywords || undefined
       };
 
       console.log('📡 Calling Supabase search-events function...');
+      setSearchProgress('🤖 KI durchsucht das Web nach Events...');
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        const messages = [
+          '🔍 Perplexity durchsucht aktuelle Event-Webseiten...',
+          '🌐 Google wird nach lokalen Events durchsucht...',
+          '✨ Versteckte Geheimtipps werden entdeckt...',
+          '🎭 Event-Details werden gesammelt...',
+          '⚡ Ergebnisse werden optimiert...',
+          '🎯 Fast fertig! Letzte Events werden geladen...'
+        ];
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        setSearchProgress(randomMessage);
+      }, 3000);
+
       const result = await searchEvents(searchData);
+      clearInterval(progressInterval);
+
       console.log('✅ Search API Response:', result);
 
       if (result.success && result.data.events) {
+        setSearchProgress('✅ Perfekt! Deine Events sind bereit!');
+
         // Map Supabase events to frontend format
         const mappedEvents = result.data.events.map((event: any) => {
           const ticketLink = event.ticket_link || event.ticketLink;
@@ -139,26 +196,44 @@ export default function App() {
             ticketLink,
             specialFeature: event.special_feature || event.specialFeature,
             // Convert ticketLink to tickets format for EventCard
-            tickets: ticketLink ? {
-              type: 'link',
+            tickets: ticketLink && ticketLink !== 'null' && ticketLink !== '' ? {
+              type: 'link' as const,
               value: ticketLink,
               label: 'Tickets kaufen'
-            } : event.tickets
+            } : (event.price === 'Free' || event.price === 'Kostenlos' || event.price?.toLowerCase().includes('free')) ? {
+              type: 'free' as const,
+              label: 'Kostenlos'
+            } : {
+              type: 'website' as const,
+              value: ticketLink || '#',
+              label: 'Zur Website'
+            }
           };
         });
 
         setSearchResults(mappedEvents);
         console.log(`🎯 Found ${mappedEvents.length} real events`, mappedEvents);
+
+        // Show success message briefly before showing results
+        setTimeout(() => {
+          setIsSearching(false);
+        }, 800);
       } else {
         console.log('❌ Search failed:', result.error);
         setSearchResults([]);
+        setSearchProgress('❌ Suche fehlgeschlagen. Bitte versuche es erneut.');
+        setTimeout(() => {
+          setIsSearching(false);
+        }, 2000);
       }
     } catch (error) {
       console.error('🔥 Search API Error:', error);
       setSearchResults([]);
+      setSearchProgress('❌ Verbindungsfehler. Bitte überprüfe deine Internetverbindung.');
+      setTimeout(() => {
+        setIsSearching(false);
+      }, 2000);
     }
-
-    setShowStartScreen(false);
   };
 
   const handleSessionSwitch = (sessionId: string) => {
@@ -576,14 +651,19 @@ export default function App() {
 
   // Show start screen if not started searching yet
   if (showStartScreen) {
-    return <AdvancedStartScreen 
-      onStartSearch={handleStartSearch} 
+    return <AdvancedStartScreen
+      onStartSearch={handleStartSearch}
       onSettingsClick={() => setShowSettings(true)}
       onShowResults={() => {
         setShowStartScreen(false);
         setViewMode('list');
       }}
     />;
+  }
+
+  // Show loading animation while searching
+  if (isSearching) {
+    return <SearchLoadingAnimation progress={searchProgress} />;
   }
 
   return (

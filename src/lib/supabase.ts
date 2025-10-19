@@ -257,6 +257,10 @@ export async function searchEvents(searchParams: {
       data: { session },
     } = await supabase.auth.getSession();
 
+    // Create an AbortController with 90 second timeout (increased for LLM processing)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
+
     const response = await fetch(
       `${supabaseUrl}/functions/v1/search-events`,
       {
@@ -267,8 +271,9 @@ export async function searchEvents(searchParams: {
           apikey: supabaseAnonKey,
         },
         body: JSON.stringify(searchParams),
+        signal: controller.signal,
       }
-    );
+    ).finally(() => clearTimeout(timeoutId));
 
     if (!response.ok) {
       const error = await response.json();
