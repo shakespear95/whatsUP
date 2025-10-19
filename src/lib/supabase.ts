@@ -257,6 +257,14 @@ export async function searchEvents(searchParams: {
       data: { session },
     } = await supabase.auth.getSession();
 
+    // Debug: Log session status
+    if (!session?.access_token) {
+      console.warn('⚠️ No valid session - searching as guest');
+      throw new Error('Authentication required. Please sign in to search for events.');
+    } else {
+      console.log('✅ Valid session found, user:', session.user?.email);
+    }
+
     // Create an AbortController with 90 second timeout (increased for LLM processing)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
@@ -267,7 +275,7 @@ export async function searchEvents(searchParams: {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || supabaseAnonKey}`,
+          Authorization: `Bearer ${session.access_token}`,
           apikey: supabaseAnonKey,
         },
         body: JSON.stringify(searchParams),
