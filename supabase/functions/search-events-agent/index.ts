@@ -422,7 +422,6 @@ ${JSON.stringify(events, null, 2)}
 ## Requirements:
 - Keep all original data (title, date, location, ticket_link, source)
 - Enhance descriptions to 2-3 engaging sentences
-- Add venue_type: "indoor", "outdoor", or "covered"
 - Add special_feature highlighting what's unique
 - ${weather.indoor_recommended ? 'Add weather_warning for outdoor events' : ''}
 - Return ONLY the JSON array, no markdown or explanations
@@ -691,7 +690,6 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
           venue: event.venue || `${searchData.location} Venue`,
           address: event.address || searchData.location,
           price: event.price || 'See website',
-          venue_type: event.venue_type || event.indoor || 'unknown',
           category: searchData.activity_type,
           special_feature: 'Real event from web search',
           organizer: event.organizer || 'Event Organizer',
