@@ -476,7 +476,7 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
   const query = `Find 15 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} starting from ${currentDate}. ${weatherContext} Include event names, FUTURE dates (not past dates), venues, ticket prices, and official website links. Return JSON array format with accurate information.`;
 
   console.log(`🔍 [Perplexity] Query: ${query}`);
-  console.log(`🔍 [Perplexity] Using model: llama-3.1-sonar-large-128k-online`);
+  console.log(`🔍 [Perplexity] Using model: sonar-pro`);
 
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -486,7 +486,7 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online', // Upgraded to large model for better results
+        model: 'sonar-pro', // Latest Perplexity model (replaces llama-3.1-sonar-*-online)
         messages: [
           {
             role: 'system',
@@ -498,8 +498,7 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
           },
         ],
         max_tokens: 5000, // Increased for more comprehensive results
-        temperature: 0.2, // Slightly increased for variety
-        search_recency_filter: 'month', // Only recent web results
+        temperature: 0.2, // Low temperature for accurate results
       }),
     });
 
