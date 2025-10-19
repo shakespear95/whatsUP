@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, MapPin, Navigation, Settings, ChevronDown, ChevronRight, X, Plus, Calendar, Sparkles, Target, Send, List, Lock, LogIn } from 'lucide-react';
+import { Search, MapPin, Navigation, Settings, ChevronDown, ChevronRight, X, Plus, Calendar, Sparkles, Target, Send, List, Lock, LogIn, Mail } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
 import { SearchFilters } from './AdvancedSearchDropdown';
 import { useAuth } from '../hooks/useAuth';
+import { EmailAuthModal } from './EmailAuthModal';
 
 interface AdvancedStartScreenProps {
   onStartSearch: (filters: SearchFilters) => void;
@@ -140,7 +141,8 @@ const quickFiltersData = [
 ];
 
 export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResults, demoMode = true, onDemoModeToggle }: AdvancedStartScreenProps) {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     location: 'Zürich, Schweiz',
     useCurrentLocation: false,
@@ -985,20 +987,20 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
           {!user && (
             <div className="pt-4 mb-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <Lock className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
                     🔒 Anmeldung erforderlich
                   </h3>
                   <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-                    Melde dich an, um 20+ KI-gesteuerte Events zu entdecken, personalisierte Empfehlungen zu erhalten und deine Favoriten zu speichern!
+                    Melde dich an, um 20+ KI-gesteuerte Events zu entdecken! Du erhältst einen Code per E-Mail oder kannst den Magic Link klicken.
                   </p>
                   <Button
-                    onClick={() => signInWithGoogle()}
+                    onClick={() => setShowEmailAuth(true)}
                     className="w-full bg-white hover:bg-gray-50 text-gray-900 border-2 border-purple-300 shadow-sm"
                   >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Mit Google anmelden
+                    <Mail className="w-4 h-4 mr-2" />
+                    Mit E-Mail anmelden
                   </Button>
                 </div>
               </div>
@@ -1234,6 +1236,16 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Email Auth Modal */}
+      <EmailAuthModal
+        open={showEmailAuth}
+        onClose={() => setShowEmailAuth(false)}
+        onSuccess={() => {
+          setShowEmailAuth(false);
+          // User is now logged in, they can search
+        }}
+      />
     </div>
   );
 }
