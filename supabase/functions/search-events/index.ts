@@ -251,26 +251,39 @@ async function saveEventsToDatabase(supabaseClient: any, events: any[]) {
 
 async function searchWithLLMs(searchData: SearchRequest) {
   console.log('🤖 Starting LAYERED intelligent search...');
+  console.log('🔑 API Keys Status:', {
+    perplexity: Deno.env.get('PERPLEXITY_API_KEY') ? '✅ Available' : '❌ Missing',
+    openai: Deno.env.get('OPENAI_API_KEY') ? '✅ Available' : '❌ Missing',
+    gemini: Deno.env.get('GOOGLE_AI_API_KEY') ? '✅ Available' : '❌ Missing',
+    serp: Deno.env.get('SERP_API_KEY') ? '✅ Available' : '❌ Missing',
+  });
 
   // LAYER 1: Get Weather Data (for context)
   const weather = await getWeatherData(searchData.location);
   console.log(`🌤️ Weather: ${weather.condition}, ${weather.temperature}°C - ${weather.description}`);
 
   // LAYER 2: Deep Search with Real Event APIs in parallel
+  console.log('🔍 LAYER 2: Calling searchRealEventsInParallel...');
   const realEvents = await searchRealEventsInParallel(searchData, weather);
+  console.log(`📊 LAYER 2 Complete: Got ${realEvents.length} real events`);
 
   if (realEvents.length > 0) {
     console.log(`✅ Found ${realEvents.length} real events, enhancing with AI + weather context...`);
+    console.log('🔍 LAYER 3: Calling enhanceEventsWithAI...');
 
     // LAYER 3: Enhance real events with AI (better descriptions, weather-aware filtering)
     const enhancedEvents = await enhanceEventsWithAI(realEvents, searchData, weather);
+    console.log(`📊 LAYER 3 Complete: Returning ${enhancedEvents.length} enhanced events`);
     return enhancedEvents;
   }
 
   console.log('⚠️ No real events found, generating with AI + weather context');
+  console.log('🔍 FALLBACK: Calling generateEventsWithAI...');
 
   // Fallback: Generate realistic events with AI + weather
-  return await generateEventsWithAI(searchData, weather);
+  const generatedEvents = await generateEventsWithAI(searchData, weather);
+  console.log(`📊 FALLBACK Complete: Generated ${generatedEvents.length} events`);
+  return generatedEvents;
 }
 
 // =====================================================
@@ -359,6 +372,7 @@ async function searchRealEventsInParallel(searchData: SearchRequest, weather: an
   console.log(`🚀 Running ${providers.length} search APIs in parallel...`);
 
   // Execute all searches in parallel
+  console.log(`⏳ Waiting for ${providers.length} API providers to respond...`);
   const results = await Promise.allSettled(providers.map(p => p.promise));
   const allEvents: any[] = [];
 
@@ -369,9 +383,10 @@ async function searchRealEventsInParallel(searchData: SearchRequest, weather: an
       console.log(`✅ ${providerName} found ${result.value.length} events`);
       allEvents.push(...result.value);
     } else if (result.status === 'rejected') {
-      console.error(`❌ ${providerName} failed:`, result.reason);
+      console.error(`❌ ${providerName} FAILED with error:`, result.reason);
+      console.error(`❌ ${providerName} Error details:`, JSON.stringify(result.reason, null, 2));
     } else {
-      console.log(`⚠️ ${providerName} returned no events`);
+      console.log(`⚠️ ${providerName} returned 0 events (fulfilled but empty)`);
     }
   });
 
@@ -444,7 +459,13 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
 }
 
 async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
+  console.log('🤖 [Perplexity] Starting search...');
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+
+  if (!PERPLEXITY_API_KEY) {
+    console.error('❌ [Perplexity] API key is missing!');
+    throw new Error('PERPLEXITY_API_KEY not configured');
+  }
 
   // Add weather context to query if available
   const weatherContext = weather.indoor_recommended
@@ -454,39 +475,51 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
   const currentDate = new Date().toISOString().split('T')[0];
   const query = `Find 15 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} starting from ${currentDate}. ${weatherContext} Include event names, FUTURE dates (not past dates), venues, ticket prices, and official website links. Return JSON array format with accurate information.`;
 
-  console.log(`🔍 Perplexity query: ${query}`);
+  console.log(`🔍 [Perplexity] Query: ${query}`);
+  console.log(`🔍 [Perplexity] Using model: llama-3.1-sonar-large-128k-online`);
 
-  const response = await fetch('https://api.perplexity.ai/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-sonar-large-128k-online', // Upgraded to large model for better results
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a real event finder with web access. Search thoroughly for real, upcoming events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website. Take your time to find quality events.',
-        },
-        {
-          role: 'user',
-          content: query,
-        },
-      ],
-      max_tokens: 5000, // Increased for more comprehensive results
-      temperature: 0.2, // Slightly increased for variety
-      search_recency_filter: 'month', // Only recent web results
-    }),
-  });
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-large-128k-online', // Upgraded to large model for better results
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a real event finder with web access. Search thoroughly for real, upcoming events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website. Take your time to find quality events.',
+          },
+          {
+            role: 'user',
+            content: query,
+          },
+        ],
+        max_tokens: 5000, // Increased for more comprehensive results
+        temperature: 0.2, // Slightly increased for variety
+        search_recency_filter: 'month', // Only recent web results
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Perplexity error ${response.status}: ${errorText}`);
+    console.log(`📡 [Perplexity] Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [Perplexity] API returned error ${response.status}:`, errorText);
+      throw new Error(`Perplexity error ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ [Perplexity] Got response, processing results...`);
+    const events = processPerplexityResults(data.choices[0].message.content, searchData);
+    console.log(`📊 [Perplexity] Processed ${events.length} events`);
+    return events;
+  } catch (error) {
+    console.error('❌ [Perplexity] Fatal error:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return processPerplexityResults(data.choices[0].message.content, searchData);
 }
 
 function processPerplexityResults(content: string, searchData: SearchRequest) {
@@ -554,29 +587,43 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
 }
 
 async function enhanceEventsWithAI(events: any[], searchData: SearchRequest) {
-  console.log(`🔧 Enhancing ${events.length} real events with AI...`);
+  console.log(`🎨 [Enhancement] Starting to enhance ${events.length} real events with AI...`);
+  console.log(`🎨 [Enhancement] Available APIs:`, {
+    openai: Deno.env.get('OPENAI_API_KEY') ? '✅ Available' : '❌ Missing',
+    gemini: Deno.env.get('GOOGLE_AI_API_KEY') ? '✅ Available' : '❌ Missing',
+  });
 
   // If we have OpenAI or Gemini, enhance the descriptions and details
   if (Deno.env.get('OPENAI_API_KEY')) {
+    console.log('🎨 [Enhancement] Trying OpenAI for enhancement...');
     try {
-      return await enhanceWithOpenAI(events, searchData);
+      const enhanced = await enhanceWithOpenAI(events, searchData);
+      console.log(`✅ [Enhancement] OpenAI enhanced ${enhanced.length} events successfully`);
+      return enhanced;
     } catch (error) {
-      console.error('OpenAI enhancement failed:', error);
-      return events; // Return original events if enhancement fails
+      console.error('❌ [Enhancement] OpenAI enhancement failed:', error);
+      console.log('🔄 [Enhancement] Will try Gemini next...');
     }
+  } else {
+    console.log('⚠️ [Enhancement] OpenAI API key not configured, skipping OpenAI');
   }
 
   if (Deno.env.get('GOOGLE_AI_API_KEY')) {
+    console.log('🎨 [Enhancement] Trying Gemini for enhancement...');
     try {
-      return await enhanceWithGemini(events, searchData);
+      const enhanced = await enhanceWithGemini(events, searchData);
+      console.log(`✅ [Enhancement] Gemini enhanced ${enhanced.length} events successfully`);
+      return enhanced;
     } catch (error) {
-      console.error('Gemini enhancement failed:', error);
-      return events; // Return original events if enhancement fails
+      console.error('❌ [Enhancement] Gemini enhancement failed:', error);
+      console.log('⚠️ [Enhancement] Will return raw events without enhancement');
     }
+  } else {
+    console.log('⚠️ [Enhancement] Gemini API key not configured, skipping Gemini');
   }
 
   // No AI available, return events as-is
-  console.log('⚠️ No AI API available for enhancement, returning raw events');
+  console.log('⚠️ [Enhancement] No AI API available for enhancement, returning raw SerpAPI/Perplexity events');
   return events;
 }
 
@@ -689,6 +736,7 @@ async function generateWithGemini(searchData: SearchRequest) {
 }
 
 async function enhanceWithOpenAI(events: any[], searchData: SearchRequest) {
+  console.log(`🤖 [OpenAI Enhancement] Processing ${events.length} events...`);
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
   const prompt = `You are an event data enhancer. Below are real events found from web search. Please improve their descriptions, ensure consistency, and fill in any missing details while keeping the core information accurate.
@@ -700,6 +748,7 @@ ${JSON.stringify(events, null, 2)}
 
 Return a JSON array with the same structure but improved descriptions, validated dates, and better formatting. Keep ticket_link, source, and real_event fields unchanged.`;
 
+  console.log(`🤖 [OpenAI Enhancement] Calling OpenAI API with gpt-4o-mini...`);
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -723,21 +772,26 @@ Return a JSON array with the same structure but improved descriptions, validated
     }),
   });
 
+  console.log(`📡 [OpenAI Enhancement] Response status: ${response.status}`);
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ [OpenAI Enhancement] API error ${response.status}:`, errorText);
     throw new Error(`OpenAI enhancement error: ${response.status}`);
   }
 
   const data = await response.json();
   const content = data.choices[0].message.content;
+  console.log(`✅ [OpenAI Enhancement] Got response, parsing JSON...`);
   const jsonMatch = content.match(/\[[\s\S]*\]/);
 
   if (!jsonMatch) {
-    console.log('⚠️ OpenAI enhancement returned invalid JSON, using original events');
+    console.log('⚠️ [OpenAI Enhancement] Response has no valid JSON, using original events');
     return events;
   }
 
   const enhancedEvents = JSON.parse(jsonMatch[0]);
-  console.log(`✅ OpenAI enhanced ${enhancedEvents.length} events`);
+  console.log(`✅ [OpenAI Enhancement] Successfully enhanced ${enhancedEvents.length} events`);
   return enhancedEvents;
 }
 
