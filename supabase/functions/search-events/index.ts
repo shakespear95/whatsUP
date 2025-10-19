@@ -38,10 +38,26 @@ serve(async (req) => {
       }
     );
 
-    // Get user from JWT token (if authenticated)
+    // Get user from JWT token (REQUIRED for security)
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
+
+    // SECURITY: Require authentication for search
+    if (!user) {
+      console.log('❌ Unauthenticated search attempt blocked');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Authentication required. Please sign in to search for events.',
+          code: 'AUTH_REQUIRED'
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     // Parse request body
     const searchData: SearchRequest = await req.json();
@@ -50,7 +66,8 @@ serve(async (req) => {
       location: searchData.location,
       activity_type: searchData.activity_type,
       timeframe: searchData.timeframe,
-      user_id: user?.id || 'guest',
+      user_id: user.id,
+      user_email: user.email,
     });
 
     // Validate required fields

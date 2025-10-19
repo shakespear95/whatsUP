@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Search, MapPin, Navigation, Settings, ChevronDown, ChevronRight, X, Plus, Calendar, Sparkles, Target, Send, List } from 'lucide-react';
+import { Search, MapPin, Navigation, Settings, ChevronDown, ChevronRight, X, Plus, Calendar, Sparkles, Target, Send, List, Lock, LogIn } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Slider } from './ui/slider';  
+import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from './ui/dialog';
@@ -11,6 +11,7 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
 import { SearchFilters } from './AdvancedSearchDropdown';
+import { useAuth } from '../hooks/useAuth';
 
 interface AdvancedStartScreenProps {
   onStartSearch: (filters: SearchFilters) => void;
@@ -139,6 +140,7 @@ const quickFiltersData = [
 ];
 
 export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResults, demoMode = true, onDemoModeToggle }: AdvancedStartScreenProps) {
+  const { user, signInWithGoogle } = useAuth();
   const [filters, setFilters] = useState<SearchFilters>({
     location: 'Zürich, Schweiz',
     useCurrentLocation: false,
@@ -271,6 +273,12 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
   };
 
   const handleStartSearch = () => {
+    // Check authentication first
+    if (!user) {
+      alert('🔒 Bitte melde dich an, um Events zu suchen.\n\nDies schützt unsere Kosten und ermöglicht personalisierte Ergebnisse für dich!');
+      return;
+    }
+
     // Validation
     if (!filters.location.trim()) {
       alert('Bitte Standort wählen');
@@ -973,13 +981,49 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
           </div>
 
+          {/* AUTH BANNER - Show if not logged in */}
+          {!user && (
+            <div className="pt-4 mb-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
+                    🔒 Anmeldung erforderlich
+                  </h3>
+                  <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
+                    Melde dich an, um 20+ KI-gesteuerte Events zu entdecken, personalisierte Empfehlungen zu erhalten und deine Favoriten zu speichern!
+                  </p>
+                  <Button
+                    onClick={() => signInWithGoogle()}
+                    className="w-full bg-white hover:bg-gray-50 text-gray-900 border-2 border-purple-300 shadow-sm"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Mit Google anmelden
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* START SEARCH BUTTON */}
           <div className="pt-4 space-y-3">
             <Button
               onClick={handleStartSearch}
-              className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-medium"
+              disabled={!user}
+              className={`w-full h-12 font-medium ${
+                user
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              🔍 Event-Suche starten
+              {user ? (
+                <>🔍 Event-Suche starten</>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Anmelden zum Suchen
+                </>
+              )}
             </Button>
             
             {/* BISHERIGE ERGEBNISSE BUTTON */}
