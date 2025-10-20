@@ -1,11 +1,11 @@
-import { ArrowLeft, ChevronRight, User, Heart, Bell, Globe, Palette, MapPin, HardDrive, MessageCircle, HelpCircle, Info, Mail, LogOut, LogIn } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ChevronRight, User, Heart, Bell, Globe, Palette, MapPin, HardDrive, MessageCircle, HelpCircle, Info, Mail, LogOut, LogIn, History, Search, MapPinIcon, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { useAuth } from "../hooks/useAuth";
-import { sendEmailOTP, verifyEmailOTP, createUserProfile, getUserProfile } from "../lib/supabase";
+import { sendEmailOTP, verifyEmailOTP, createUserProfile, getUserProfile, getSearchHistory } from "../lib/supabase";
 import { UserProfile } from "../pages/UserProfile";
 import { SavedEvents } from "../pages/SavedEvents";
 import { LanguageSelection } from "../pages/LanguageSelection";
@@ -36,6 +36,29 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
   const [step, setStep] = useState<'email' | 'otp' | 'profile'>('email');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Search history state
+  const [searchHistory, setSearchHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Fetch search history when user logs in
+  useEffect(() => {
+    const fetchSearchHistory = async () => {
+      if (user) {
+        setLoadingHistory(true);
+        try {
+          const history = await getSearchHistory(5); // Get last 5 searches
+          setSearchHistory(history || []);
+        } catch (error) {
+          console.error('Error fetching search history:', error);
+        } finally {
+          setLoadingHistory(false);
+        }
+      }
+    };
+
+    fetchSearchHistory();
+  }, [user]);
 
   // Show different pages based on activePage
   if (activePage === 'profile') {
@@ -261,25 +284,78 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
         <div className="space-y-6">
           {/* User Profile Section */}
           {user ? (
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  {user.user_metadata?.avatar_url ? (
-                    <img
-                      src={user.user_metadata.avatar_url}
-                      alt={user.user_metadata?.full_name || 'User'}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  ) : (
-                    <User className="w-6 h-6 text-primary" />
-                  )}
+            <>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    {user.user_metadata?.avatar_url ? (
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        alt={user.user_metadata?.full_name || 'User'}
+                        className="w-12 h-12 rounded-full"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{user.user_metadata?.full_name || 'User'}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">{user.user_metadata?.full_name || 'User'}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+
+              {/* Recent Searches Section */}
+              {searchHistory.length > 0 && (
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold">Recent Searches</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {searchHistory.map((search, index) => (
+                        <Button
+                          key={search.id || index}
+                          variant="outline"
+                          className="w-full justify-start h-auto py-3 px-3"
+                          onClick={() => {
+                            // TODO: Trigger search with these params
+                            console.log('Repeat search:', search);
+                          }}
+                        >
+                          <div className="flex flex-col items-start gap-1 w-full">
+                            <div className="flex items-center gap-2 w-full">
+                              <MapPinIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium text-sm">{search.location}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              {search.activity_type && (
+                                <span className="flex items-center gap-1">
+                                  <Search className="w-3 h-3" />
+                                  {search.activity_type}
+                                </span>
+                              )}
+                              {search.timeframe && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {search.timeframe}
+                                </span>
+                              )}
+                              {search.results_count !== undefined && (
+                                <span className="ml-auto">
+                                  {search.results_count} results
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </>
           ) : (
             <Card className="p-4">
               <div className="space-y-4">
