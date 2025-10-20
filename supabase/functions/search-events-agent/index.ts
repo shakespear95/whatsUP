@@ -360,9 +360,30 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
     ? 'Focus on INDOOR events due to bad weather.'
     : 'Include both indoor and outdoor events.';
 
-  const query = `Find 10 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} in 2025. ${weatherContext} Include hidden gems and local favorites. Return: event name, exact date (YYYY-MM-DD), time (HH:MM), venue name, full address, ticket price, website link, and whether it's indoor or outdoor. Return as JSON array.`;
+  const query = `Search the web for REAL ${searchData.activity_type} events happening in ${searchData.location} during ${searchData.timeframe} in 2025.
 
-  console.log(`🔍 Perplexity query (weather-aware): ${query.substring(0, 100)}...`);
+IMPORTANT REQUIREMENTS:
+1. Find ACTUAL events with REAL NAMES (like "Nicki Minaj Concert" NOT "Concert Event" or "Interesting Event")
+2. Get the REAL venue names (like "Madison Square Garden" NOT "Venue 1")
+3. Find REAL ticket prices and booking links
+4. Verify these events actually exist - check official sources
+
+${weatherContext}
+
+For each event, provide:
+- title: The ACTUAL event name (artist/show name)
+- venue: REAL venue name
+- address: Full street address
+- date: Exact date (YYYY-MM-DD format)
+- time: Start time (HH:MM format)
+- price: Real ticket price or "Free"
+- website: Official booking/ticket URL
+- description: 2-3 sentence summary of what makes this event special
+- organizer: Who is hosting/performing
+
+Return as a JSON array with 8-12 events. NO generic names like "Event" or "Concert Event". ONLY real, verifiable events with actual names.`;
+
+  console.log(`🔍 Perplexity query: Find real ${searchData.activity_type} events in ${searchData.location}`);
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
@@ -375,7 +396,7 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert event finder with real-time web access. Find real, verifiable events. Include both mainstream events and hidden local gems. Always return structured JSON.',
+          content: 'You are an expert event finder with real-time web access. Search official event websites, ticketing platforms, and venue calendars. Find REAL events with ACTUAL names, venues, and ticket information. NO generic placeholder names. Return ONLY events that actually exist with verifiable details. Always return valid JSON array format.',
         },
         {
           role: 'user',
