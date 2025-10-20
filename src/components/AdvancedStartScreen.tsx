@@ -277,18 +277,18 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
   const handleStartSearch = () => {
     // Check authentication first
     if (!user) {
-      alert('🔒 Bitte melde dich an, um Events zu suchen.\n\nDies schützt unsere Kosten und ermöglicht personalisierte Ergebnisse für dich!');
+      alert('🔒 Please sign in to search for events.\n\nThis protects our costs and enables personalized results for you!');
       return;
     }
 
     // Validation
     if (!filters.location.trim()) {
-      alert('Bitte Standort wählen');
+      alert('Please choose a location');
       return;
     }
 
     if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
-      alert('Enddatum muss nach Startdatum liegen');
+      alert('End date must be after start date');
       return;
     }
 
@@ -990,17 +990,17 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                 <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
-                    🔒 Anmeldung erforderlich
+                    🔒 Sign in required
                   </h3>
                   <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-                    Melde dich an, um 20+ KI-gesteuerte Events zu entdecken! Du erhältst einen Code per E-Mail oder kannst den Magic Link klicken.
+                    Sign in to discover 20+ AI-powered events! You'll receive a code via email or can click the Magic Link.
                   </p>
                   <Button
                     onClick={() => setShowEmailAuth(true)}
                     className="w-full bg-white hover:bg-gray-50 text-gray-900 border-2 border-purple-300 shadow-sm"
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    Mit E-Mail anmelden
+                    Sign in with Email
                   </Button>
                 </div>
               </div>
@@ -1019,11 +1019,11 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
               }`}
             >
               {user ? (
-                <>🔍 Event-Suche starten</>
+                <>🔍 Start Event Search</>
               ) : (
                 <>
                   <Lock className="w-4 h-4 mr-2" />
-                  Anmelden zum Suchen
+                  Sign in to Search
                 </>
               )}
             </Button>

@@ -109,20 +109,20 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">
                 <Mail className="w-6 h-6 inline-block mr-2 text-purple-600" />
-                Mit E-Mail anmelden
+                Sign in with Email
               </DialogTitle>
               <DialogDescription className="text-base">
-                Wir senden dir einen 6-stelligen Code und einen Magic Link per E-Mail.
+                We'll send you a 6-digit code and a Magic Link via email.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-4">
               {/* Email Input */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">E-Mail-Adresse</label>
+                <label className="text-sm font-medium">Email Address</label>
                 <Input
                   type="email"
-                  placeholder="deine@email.com"
+                  placeholder="your@email.com"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -144,16 +144,16 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
               <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
                 <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
                   <KeyRound className="w-4 h-4" />
-                  Zwei Optionen zum Anmelden:
+                  Two ways to sign in:
                 </h4>
                 <ul className="space-y-1 text-sm text-purple-700 dark:text-purple-300">
                   <li className="flex items-start gap-2">
                     <span className="text-purple-600 font-bold">1.</span>
-                    <span>Klicke auf den <strong>Magic Link</strong> in der E-Mail</span>
+                    <span>Click the <strong>Magic Link</strong> in the email</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-purple-600 font-bold">2.</span>
-                    <span>Gib den <strong>6-stelligen Code</strong> hier ein</span>
+                    <span>Enter the <strong>6-digit code</strong> here</span>
                   </li>
                 </ul>
               </div>
@@ -166,18 +166,18 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Wird gesendet...
+                    Sending...
                   </>
                 ) : (
                   <>
-                    Code senden
+                    Send Code
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                Kein Passwort erforderlich! Du erhältst einen einmaligen Code.
+                No password required! You'll receive a one-time code.
               </p>
             </div>
           </>
@@ -186,10 +186,10 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">
                 <KeyRound className="w-6 h-6 inline-block mr-2 text-purple-600" />
-                Code eingeben
+                Enter Code
               </DialogTitle>
               <DialogDescription className="text-base">
-                Wir haben einen 6-stelligen Code an <strong className="text-foreground">{email}</strong> gesendet.
+                We sent a 6-digit code to <strong className="text-foreground">{email}</strong>.
               </DialogDescription>
             </DialogHeader>
 
@@ -197,13 +197,13 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
               {success && step === 'code' && !error && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" />
-                  E-Mail wurde gesendet! Prüfe deinen Posteingang.
+                  Email sent! Check your inbox.
                 </div>
               )}
 
               {/* Code Input */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">6-stelliger Code</label>
+                <label className="text-sm font-medium">6-digit Code</label>
                 <Input
                   type="text"
                   placeholder="123456"
@@ -219,7 +219,7 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  Gib den Code aus der E-Mail ein
+                  Enter the code from your email
                 </p>
               </div>
 
@@ -232,11 +232,11 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
               {/* Info Box */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  💡 Tipp: Zwei Wege zum Anmelden
+                  💡 Tip: Two ways to sign in
                 </h4>
                 <ul className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                  <li>• <strong>Option 1:</strong> Klicke den Magic Link in der E-Mail</li>
-                  <li>• <strong>Option 2:</strong> Gib den Code hier ein (schneller!)</li>
+                  <li>• <strong>Option 1:</strong> Click the Magic Link in the email</li>
+                  <li>• <strong>Option 2:</strong> Enter the code here (faster!)</li>
                 </ul>
               </div>
 
@@ -248,16 +248,16 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Wird überprüft...
+                    Verifying...
                   </>
                 ) : success && !error ? (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Erfolgreich angemeldet!
+                    Successfully signed in!
                   </>
                 ) : (
                   <>
-                    Anmelden
+                    Sign In
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -269,7 +269,7 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                   onClick={handleBack}
                   className="text-muted-foreground hover:text-foreground p-0 h-auto"
                 >
-                  ← Andere E-Mail verwenden
+                  ← Use different email
                 </Button>
                 <Button
                   variant="link"
@@ -277,12 +277,12 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                   disabled={loading}
                   className="text-purple-600 hover:text-purple-700 p-0 h-auto"
                 >
-                  Code erneut senden
+                  Resend code
                 </Button>
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
-                Der Code ist 60 Minuten gültig
+                Code is valid for 60 minutes
               </p>
             </div>
           </>
