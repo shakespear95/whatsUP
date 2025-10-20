@@ -767,8 +767,20 @@ async function addCoordinatesToEvents(events: any[]): Promise<any[]> {
   const eventsWithCoords = [];
 
   for (const event of events) {
-    // Try to geocode the location
-    const coords = await getCoordinatesForLocation(event.location);
+    // Build the best possible address for geocoding
+    // Priority: Full address > Venue + City > City only
+    let locationQuery = event.location;
+
+    if (event.address && event.address !== event.location && event.address !== 'See website' && !event.address.includes('See website')) {
+      // Use full address if available
+      locationQuery = event.address;
+    } else if (event.venue && event.venue !== event.location && !event.venue.includes('Venue')) {
+      // Use venue + city for better accuracy
+      locationQuery = `${event.venue}, ${event.location}`;
+    }
+
+    // Try to geocode with the best available address
+    const coords = await getCoordinatesForLocation(locationQuery);
 
     if (coords) {
       eventsWithCoords.push({
@@ -776,15 +788,42 @@ async function addCoordinatesToEvents(events: any[]): Promise<any[]> {
         latitude: coords.latitude,
         longitude: coords.longitude,
       });
-      console.log(`✅ Geocoded: ${event.location} → (${coords.latitude}, ${coords.longitude})`);
+      console.log(`✅ Geocoded: "${locationQuery}" → (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`);
     } else {
-      // Keep event but without coordinates
-      eventsWithCoords.push({
-        ...event,
-        latitude: null,
-        longitude: null,
-      });
-      console.warn(`⚠️ Could not geocode: ${event.location}`);
+      // Fallback: try just the city if full address failed
+      if (locationQuery !== event.location) {
+        console.log(`⚠️ Trying fallback: ${event.location}`);
+        const fallbackCoords = await getCoordinatesForLocation(event.location);
+
+        if (fallbackCoords) {
+          // Add slight random offset to avoid stacking pins (0.001 degrees ≈ 100 meters)
+          const randomOffsetLat = (Math.random() - 0.5) * 0.01;
+          const randomOffsetLon = (Math.random() - 0.5) * 0.01;
+
+          eventsWithCoords.push({
+            ...event,
+            latitude: fallbackCoords.latitude + randomOffsetLat,
+            longitude: fallbackCoords.longitude + randomOffsetLon,
+          });
+          console.log(`✅ Geocoded (city center + offset): ${event.location} → (${fallbackCoords.latitude.toFixed(4)}, ${fallbackCoords.longitude.toFixed(4)})`);
+        } else {
+          // Keep event but without coordinates
+          eventsWithCoords.push({
+            ...event,
+            latitude: null,
+            longitude: null,
+          });
+          console.warn(`❌ Could not geocode: ${event.location}`);
+        }
+      } else {
+        // Keep event but without coordinates
+        eventsWithCoords.push({
+          ...event,
+          latitude: null,
+          longitude: null,
+        });
+        console.warn(`❌ Could not geocode: ${locationQuery}`);
+      }
     }
   }
 
