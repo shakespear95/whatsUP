@@ -422,7 +422,8 @@ Return as a JSON array with 8-12 events. NO generic names like "Event" or "Conce
 // =====================================================
 
 async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchRequest, weather: any) {
-  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+  // Try with and without leading space (handle secret naming issues)
+  let ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get(' ANTHROPIC_API_KEY');
 
   if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.trim() === '') {
     console.log('⚠️ No Anthropic API key found in environment');
@@ -430,6 +431,8 @@ async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchReq
     return events;
   }
 
+  // Trim any whitespace from the key value itself
+  ANTHROPIC_API_KEY = ANTHROPIC_API_KEY.trim();
   console.log('✅ Anthropic API key found, length:', ANTHROPIC_API_KEY.length);
 
   console.log(`🤖 Claude Agent enhancing ${events.length} events...`);
