@@ -297,7 +297,7 @@ Return ONLY the JSON array, no other text.`;
 // =====================================================
 
 async function searchRealEventsInParallel(searchData: SearchRequest, weather: any) {
-  console.log('🔍 Searching real events (SerpAPI + Perplexity) in parallel...');
+  console.log('🔍 Searching real events (SerpAPI + Perplexity + OpenAI) in parallel...');
 
   const providers: { name: string; promise: Promise<any[]> }[] = [];
 
@@ -312,6 +312,13 @@ async function searchRealEventsInParallel(searchData: SearchRequest, weather: an
     providers.push({
       name: 'Perplexity',
       promise: searchWithPerplexity(searchData, weather),
+    });
+  }
+
+  if (Deno.env.get('Open-AI-websearch')) {
+    providers.push({
+      name: 'OpenAI',
+      promise: searchWithOpenAI(searchData, weather),
     });
   }
 
@@ -415,6 +422,134 @@ Return as a JSON array with 8-12 events. NO generic names like "Event" or "Conce
 
   const data = await response.json();
   return processPerplexityResults(data.choices[0].message.content, searchData);
+}
+
+// =====================================================
+// OpenAI Web Search
+// =====================================================
+
+async function searchWithOpenAI(searchData: SearchRequest, weather: any) {
+  const OPENAI_API_KEY = Deno.env.get('Open-AI-websearch');
+
+  if (!OPENAI_API_KEY) {
+    console.log('⚠️ No OpenAI API key found');
+    return [];
+  }
+
+  // Weather-aware query
+  const weatherContext = weather.indoor_recommended
+    ? 'Focus on INDOOR events due to bad weather.'
+    : 'Include both indoor and outdoor events.';
+
+  const query = `Find REAL ${searchData.activity_type} events happening in ${searchData.location} during ${searchData.timeframe} in 2025.
+
+CRITICAL REQUIREMENTS:
+1. Find ACTUAL events with REAL NAMES (e.g., "Taylor Swift Eras Tour" NOT "Concert Event")
+2. Get REAL venue names (e.g., "The O2 Arena" NOT "Venue 1")
+3. Find REAL ticket prices and booking URLs
+4. Verify these events exist on official sources
+
+${weatherContext}
+
+For each event provide:
+- title: The ACTUAL event name (with artist/performer name)
+- venue: REAL venue name
+- address: Full street address
+- date: Exact date (YYYY-MM-DD)
+- time: Start time (HH:MM)
+- price: Real ticket price or "Free"
+- website: Official ticket/booking URL
+- description: 2-3 sentences about what makes this event special
+- organizer: Who is hosting/performing
+
+Return as JSON array with 8-12 events. NO generic names. ONLY real, verifiable events.`;
+
+  console.log('🔍 OpenAI Web Search query...');
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert event discovery assistant with web search capabilities. Search the web for REAL, VERIFIABLE events only. Return detailed, accurate information in JSON format.',
+          },
+          {
+            role: 'user',
+            content: query,
+          },
+        ],
+        max_tokens: 3000,
+        temperature: 0.2,
+        web_search: true, // Enable web search
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI error ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return processOpenAIResults(data.choices[0].message.content, searchData);
+  } catch (error) {
+    console.error('OpenAI search error:', error);
+    return [];
+  }
+}
+
+function processOpenAIResults(content: string, searchData: SearchRequest) {
+  const events: any[] = [];
+  try {
+    // Extract JSON array from response (non-greedy)
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    if (jsonMatch) {
+      let jsonString = jsonMatch[0];
+
+      // Truncate at last closing bracket
+      const lastBracketIndex = jsonString.lastIndexOf(']');
+      if (lastBracketIndex !== -1) {
+        jsonString = jsonString.substring(0, lastBracketIndex + 1);
+      }
+
+      const parsedEvents = JSON.parse(jsonString);
+
+      parsedEvents.forEach((event: any) => {
+        events.push({
+          title: event.title || 'Event',
+          description: event.description || '',
+          date: event.date || getDateInTimeframe(searchData.timeframe, 0),
+          time: event.time || '19:00',
+          location: searchData.location,
+          venue: event.venue || searchData.location,
+          address: event.address || `${searchData.location} - See website`,
+          price: event.price || 'See website',
+          category: searchData.activity_type,
+          special_feature: event.special_feature || 'Web search result',
+          organizer: event.organizer || 'Event Organizer',
+          capacity: 'See website',
+          tags: [searchData.activity_type.toLowerCase(), 'real-event', 'openai'],
+          ticket_link: event.website || event.ticket_link || null,
+          source: 'OpenAI',
+          real_event: true,
+          image_url: getEventImage(searchData.activity_type),
+        });
+      });
+    }
+
+    console.log(`✅ OpenAI found ${events.length} events`);
+    console.log(`📊 OpenAI processed ${events.length} events`);
+  } catch (error) {
+    console.error('Error parsing OpenAI results:', error);
+  }
+
+  return events.slice(0, 10);
 }
 
 // =====================================================
