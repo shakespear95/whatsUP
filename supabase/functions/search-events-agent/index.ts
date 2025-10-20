@@ -173,7 +173,11 @@ async function searchWithAgent(searchData: SearchRequest) {
   console.log(`✅ Found ${realEvents.length} real events, enhancing with Claude Agent...`);
   const enhancedEvents = await enhanceEventsWithClaudeAgent(realEvents, searchData, weather);
 
-  return enhancedEvents;
+  // Step 4: Add geocoding coordinates
+  console.log(`📍 Adding coordinates to ${enhancedEvents.length} events...`);
+  const eventsWithCoords = await addCoordinatesToEvents(enhancedEvents);
+
+  return eventsWithCoords;
 }
 
 // =====================================================
@@ -675,6 +679,95 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
 
   console.log(`📊 SerpAPI processed ${events.length} events`);
   return events;
+}
+
+// =====================================================
+// Geocoding with Nominatim (OpenStreetMap)
+// =====================================================
+async function geocodeLocation(locationName: string): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    // Clean up location name
+    const cleanLocation = locationName.trim();
+
+    // Use Nominatim API (free, no API key required)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanLocation)}&format=json&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'WhatsUP-Event-Finder/1.0', // Required by Nominatim
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`⚠️ Geocoding failed for "${locationName}": ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const result = data[0];
+      return {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+      };
+    }
+
+    console.warn(`⚠️ No coordinates found for "${locationName}"`);
+    return null;
+  } catch (error) {
+    console.error(`❌ Geocoding error for "${locationName}":`, error);
+    return null;
+  }
+}
+
+// Cache for geocoded locations to avoid repeated API calls
+const geocodeCache = new Map<string, { latitude: number; longitude: number } | null>();
+
+async function getCoordinatesForLocation(locationName: string): Promise<{ latitude: number; longitude: number } | null> {
+  // Check cache first
+  if (geocodeCache.has(locationName)) {
+    return geocodeCache.get(locationName) || null;
+  }
+
+  // Geocode and cache result
+  const coords = await geocodeLocation(locationName);
+  geocodeCache.set(locationName, coords);
+
+  // Add small delay to respect Nominatim rate limits (1 request per second)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  return coords;
+}
+
+// Add coordinates to all events
+async function addCoordinatesToEvents(events: any[]): Promise<any[]> {
+  const eventsWithCoords = [];
+
+  for (const event of events) {
+    // Try to geocode the location
+    const coords = await getCoordinatesForLocation(event.location);
+
+    if (coords) {
+      eventsWithCoords.push({
+        ...event,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      console.log(`✅ Geocoded: ${event.location} → (${coords.latitude}, ${coords.longitude})`);
+    } else {
+      // Keep event but without coordinates
+      eventsWithCoords.push({
+        ...event,
+        latitude: null,
+        longitude: null,
+      });
+      console.warn(`⚠️ Could not geocode: ${event.location}`);
+    }
+  }
+
+  return eventsWithCoords;
 }
 
 function processPerplexityResults(content: string, searchData: SearchRequest) {

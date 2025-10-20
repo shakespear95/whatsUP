@@ -125,8 +125,15 @@ export function MapView({ events }: MapViewProps) {
     });
     markersRef.current = [];
 
-    // Neue Marker für Events hinzufügen
+    // Neue Marker für Events hinzufügen (nur für Events mit Koordinaten)
     events.forEach(event => {
+      // Skip events without coordinates
+      if (!event.latitude || !event.longitude ||
+          isNaN(event.latitude) || isNaN(event.longitude)) {
+        console.warn('⚠️ Event missing coordinates:', event.title, event.location);
+        return;
+      }
+
       // Custom Icon für Event-Marker
       const customIcon = L.divIcon({
         html: `
