@@ -315,7 +315,11 @@ async function searchRealEventsInParallel(searchData: SearchRequest, weather: an
     });
   }
 
-  if (Deno.env.get('Open-AI-websearch')) {
+  // Check for OpenAI key (try multiple possible names)
+  const openAiKey = Deno.env.get('Open-AI-websearch') ||
+                    Deno.env.get('OPENAI_API_KEY') ||
+                    Deno.env.get('OpenAI-websearch');
+  if (openAiKey) {
     providers.push({
       name: 'OpenAI',
       promise: searchWithOpenAI(searchData, weather),
@@ -429,12 +433,18 @@ Return as a JSON array with 8-12 events. NO generic names like "Event" or "Conce
 // =====================================================
 
 async function searchWithOpenAI(searchData: SearchRequest, weather: any) {
-  const OPENAI_API_KEY = Deno.env.get('Open-AI-websearch');
+  // Try multiple possible key names
+  const OPENAI_API_KEY = Deno.env.get('Open-AI-websearch') ||
+                         Deno.env.get('OPENAI_API_KEY') ||
+                         Deno.env.get('OpenAI-websearch');
 
-  if (!OPENAI_API_KEY) {
-    console.log('⚠️ No OpenAI API key found');
+  if (!OPENAI_API_KEY || OPENAI_API_KEY.trim() === '') {
+    console.log('⚠️ No OpenAI API key found in environment');
+    console.log('🔍 Available OpenAI env vars:', Object.keys(Deno.env.toObject()).filter(k => k.toLowerCase().includes('openai')));
     return [];
   }
+
+  console.log('✅ OpenAI API key found, length:', OPENAI_API_KEY.trim().length);
 
   // Weather-aware query
   const weatherContext = weather.indoor_recommended
@@ -464,21 +474,21 @@ For each event provide:
 
 Return as JSON array with 8-12 events. NO generic names. ONLY real, verifiable events.`;
 
-  console.log('🔍 OpenAI Web Search query...');
+  console.log('🔍 OpenAI query (GPT-4o with web context)...');
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY.trim()}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert event discovery assistant with web search capabilities. Search the web for REAL, VERIFIABLE events only. Return detailed, accurate information in JSON format.',
+            content: 'You are an expert event discovery assistant. Based on your knowledge and training data about events worldwide, provide REAL, VERIFIABLE events only. Return detailed, accurate information in JSON format. Focus on well-known, established events and venues.',
           },
           {
             role: 'user',
@@ -486,8 +496,7 @@ Return as JSON array with 8-12 events. NO generic names. ONLY real, verifiable e
           },
         ],
         max_tokens: 3000,
-        temperature: 0.2,
-        web_search: true, // Enable web search
+        temperature: 0.3,
       }),
     });
 
@@ -627,15 +636,22 @@ Return the enhanced events as a JSON array.`;
     const data = await response.json();
     const content = data.content[0].text;
 
-    // Extract JSON from response
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    // Extract JSON from response (non-greedy)
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
 
     if (!jsonMatch) {
       console.log('⚠️ Claude returned invalid JSON, using original events');
       return events;
     }
 
-    const enhancedEvents = JSON.parse(jsonMatch[0]);
+    // Truncate at last closing bracket to ensure valid JSON
+    let jsonString = jsonMatch[0];
+    const lastBracketIndex = jsonString.lastIndexOf(']');
+    if (lastBracketIndex !== -1) {
+      jsonString = jsonString.substring(0, lastBracketIndex + 1);
+    }
+
+    const enhancedEvents = JSON.parse(jsonString);
     console.log(`✅ Claude Agent enhanced ${enhancedEvents.length} events`);
 
     return enhancedEvents;
