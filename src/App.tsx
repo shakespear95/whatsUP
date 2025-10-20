@@ -372,34 +372,36 @@ export default function App() {
       // Category filter
       if (filters.categories.length > 0 || filters.subcategories.length > 0) {
         const categoryMapping: { [key: string]: string[] } = {
-          'konzerte': ['konzert', 'club'],
-          'buehne': ['theater'],
-          'kunst': ['ausstellung'],
-          'familie': ['kinder'],
-          'sport': ['sport'],
-          'messen': ['markt'],
-          'kulinarik': ['festival'],
-          'wissen': ['workshop'],
-          'specials': ['special'],
+          'konzerte': ['konzert', 'club', 'concert', 'music', 'concerts & music'],
+          'buehne': ['theater', 'theatre', 'stage', 'stage & theater'],
+          'kunst': ['ausstellung', 'art', 'kunst', 'exhibition', 'art & exhibitions'],
+          'familie': ['kinder', 'familie', 'family', 'kids', 'family & kids'],
+          'sport': ['sport', 'fitness', 'sports', 'sport & fitness'],
+          'messen': ['markt', 'messe', 'market', 'fair', 'markets & fairs'],
+          'kulinarik': ['festival', 'kulinarik', 'food', 'culinary', 'food & culinary'],
+          'wissen': ['workshop', 'wissen', 'learning', 'education', 'knowledge & workshops'],
+          'specials': ['special', 'unique', 'exclusive'],
           // New unique categories
-          'unique-underground': ['underground', 'pop-up', 'secret', 'alternative'],
-          'community-spontan': ['community', 'spontan', 'nachbarschaft'],
-          'random-weird': ['weird', 'kurios', 'mystery', 'random']
+          'unique-underground': ['underground', 'pop-up', 'secret', 'alternative', 'unique'],
+          'community-spontan': ['community', 'spontan', 'nachbarschaft', 'spontaneous'],
+          'random-weird': ['weird', 'kurios', 'mystery', 'random', 'bizarre']
         };
-        
+
         let matchesCategory = false;
-        
+
         // Check main categories
         if (filters.categories.length > 0) {
           for (const category of filters.categories) {
             const allowedCategories = categoryMapping[category] || [category];
-            if (allowedCategories.some(cat => event.category.toLowerCase().includes(cat))) {
+            // Check if any allowed category matches the event category
+            const matched = allowedCategories.some(cat => event.category.toLowerCase().includes(cat));
+            if (matched) {
               matchesCategory = true;
               break;
             }
           }
         }
-        
+
         // Check subcategories
         if (!matchesCategory && filters.subcategories.length > 0) {
           for (const subcategory of filters.subcategories) {
@@ -411,7 +413,16 @@ export default function App() {
             }
           }
         }
-        
+
+        // If no category match and categories are set, log for debugging
+        if (!matchesCategory && searchResults.length > 0) {
+          console.log('❌ Category mismatch:', {
+            eventCategory: event.category,
+            filterCategories: filters.categories,
+            filterSubcategories: filters.subcategories
+          });
+        }
+
         if (!matchesCategory) return false;
       }
 
