@@ -161,17 +161,18 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
               <Button
                 onClick={handleSendCode}
                 disabled={loading || !email}
-                className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium"
+                className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold shadow-lg"
+                size="lg"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Sending...
                   </>
                 ) : (
                   <>
                     Send Code
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </>
                 )}
               </Button>
@@ -243,22 +244,23 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
               <Button
                 onClick={handleVerifyCode}
                 disabled={loading || code.length !== 6}
-                className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-medium"
+                className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold shadow-lg"
+                size="lg"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Verifying...
                   </>
                 ) : success && !error ? (
                   <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="w-5 h-5 mr-2" />
                     Successfully signed in!
                   </>
                 ) : (
                   <>
                     Sign In
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </>
                 )}
               </Button>
