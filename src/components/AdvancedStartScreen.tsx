@@ -352,17 +352,17 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
           
 
 
-          {/* SUCH-MODUS */}
+          {/* SEARCH MODE */}
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <label className="font-medium whitespace-nowrap w-8 md:w-32">
                 <span className="md:hidden">🎲</span>
-                <span className="hidden md:inline">🎲 MODUS</span>
+                <span className="hidden md:inline">🎲 MODE</span>
               </label>
               <div className="flex-1 flex gap-2">
                 {(['standard', 'discover'] as const).map((mode) => {
-                  const modeInfo = mode === 'discover' 
-                    ? { icon: <Sparkles className="w-4 h-4" />, label: 'Entdecken' }
+                  const modeInfo = mode === 'discover'
+                    ? { icon: <Sparkles className="w-4 h-4" />, label: 'Discover' }
                     : { icon: <Target className="w-4 h-4" />, label: 'Standard' };
                   
                   return (
@@ -387,17 +387,17 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             )}
           </div>
 
-          {/* 1. STANDORT */}
+          {/* 1. LOCATION */}
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <label className="font-medium whitespace-nowrap w-8 md:w-32">
                 <span className="md:hidden">📍</span>
-                <span className="hidden md:inline">📍 STANDORT</span>
+                <span className="hidden md:inline">📍 LOCATION</span>
               </label>
               <div className="flex-1 flex gap-3">
                 <div className="flex-1 relative">
                   <Input
-                    placeholder="Stadt oder Adresse eingeben..."
+                    placeholder="Enter city or address..."
                     value={filters.location}
                     onChange={(e) => updateFilters({ location: e.target.value, useCurrentLocation: false })}
                     className="h-12 md:h-10"
@@ -408,7 +408,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   size="icon"
                   onClick={handleLocationDetection}
                   className="h-12 w-12 md:h-10 md:w-10 flex-shrink-0"
-                  title="Aktuellen Standort verwenden"
+                  title="Use current location"
                 >
                   <Navigation className="w-4 h-4" />
                 </Button>
@@ -437,21 +437,21 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
           </div>
 
-          {/* 3. KATEGORIEN - Ausgeblendet im Entdecken-Modus */}
+          {/* 3. CATEGORIES - Hidden in Discover Mode */}
           {filters.searchMode !== 'discover' && (
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <label className="font-medium whitespace-nowrap w-8 md:w-32">
                 <span className="md:hidden">📂</span>
-                <span className="hidden md:inline">📂 KATEGORIEN</span>
+                <span className="hidden md:inline">📂 CATEGORIES</span>
               </label>
               <div className="flex-1">
                 <Dialog open={showCategoriesModal} onOpenChange={setShowCategoriesModal}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="w-full justify-between h-12 md:h-10">
                       <span>
-                        {filters.categories.length > 0 
-                          ? `${filters.categories.length} Kategorien` 
+                        {filters.categories.length > 0
+                          ? `${filters.categories.length} Categories`
                           : "Choose categories"
                         }
                       </span>
@@ -460,9 +460,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Kategorien auswählen</DialogTitle>
+                      <DialogTitle>Choose Categories</DialogTitle>
                       <DialogDescription>
-                        Wählen Sie die Event-Kategorien aus, die Sie interessieren
+                        Select the event categories you're interested in
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -568,12 +568,12 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
           </div>
           )}
 
-          {/* 4. ZEITRAUM */}
+          {/* 4. TIME PERIOD */}
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <label className="font-medium whitespace-nowrap w-8 md:w-32">
                 <span className="md:hidden">📅</span>
-                <span className="hidden md:inline">📅 ZEITRAUM</span>
+                <span className="hidden md:inline">📅 TIME PERIOD</span>
               </label>
               <div className="flex-1">
                 <Select 
@@ -584,14 +584,14 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                     <SelectValue placeholder="Choose time period" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">An allen Terminen</SelectItem>
-                    <SelectItem value="today">Heute (25.09.)</SelectItem>
-                    <SelectItem value="tomorrow">Morgen (26.09.)</SelectItem>
-                    <SelectItem value="thisWeek">Diese Woche (25.09. - 28.09.)</SelectItem>
-                    <SelectItem value="thisWeekend">Dieses Wochenende (26.09. - 28.09.)</SelectItem>
-                    <SelectItem value="nextWeek">Next week (29.09. - 05.10.)</SelectItem>
-                    <SelectItem value="nextMonth">Next month (01.10. - 31.10.)</SelectItem>
-                    <SelectItem value="custom">Choose custom time period</SelectItem>
+                    <SelectItem value="all">All Dates</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                    <SelectItem value="thisWeek">This Week</SelectItem>
+                    <SelectItem value="thisWeekend">This Weekend</SelectItem>
+                    <SelectItem value="nextWeek">Next Week</SelectItem>
+                    <SelectItem value="nextMonth">Next Month</SelectItem>
+                    <SelectItem value="custom">Choose Custom Time Period</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -602,7 +602,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
               <div className="bg-card border rounded-lg p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Von:</label>
+                    <label className="text-sm font-medium">From:</label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -611,9 +611,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                         >
                           <Calendar className="mr-2 h-4 w-4" />
                           {filters.dateFrom ? (
-                            new Date(filters.dateFrom).toLocaleDateString('de-CH')
+                            new Date(filters.dateFrom).toLocaleDateString('en-US')
                           ) : (
-                            <span>Startdatum wählen</span>
+                            <span>Choose Start Date</span>
                           )}
                         </Button>
                       </PopoverTrigger>
@@ -630,7 +630,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Bis:</label>
+                    <label className="text-sm font-medium">To:</label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -639,9 +639,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                         >
                           <Calendar className="mr-2 h-4 w-4" />
                           {filters.dateTo ? (
-                            new Date(filters.dateTo).toLocaleDateString('de-CH')
+                            new Date(filters.dateTo).toLocaleDateString('en-US')
                           ) : (
-                            <span>Enddatum wählen</span>
+                            <span>Choose End Date</span>
                           )}
                         </Button>
                       </PopoverTrigger>

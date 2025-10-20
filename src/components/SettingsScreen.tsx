@@ -51,25 +51,25 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
   }
 
   const handleLogout = async () => {
-    if (confirm("Möchten Sie sich wirklich ausloggen?")) {
+    if (confirm("Do you really want to log out?")) {
       try {
         await signOut();
-        console.log("Benutzer ausgeloggt");
+        console.log("User logged out");
         // Reset form
         setStep('email');
         setEmail('');
         setOtpCode('');
         setFullName('');
       } catch (error) {
-        console.error("Logout fehlgeschlagen:", error);
-        alert("Logout fehlgeschlagen. Bitte versuchen Sie es erneut.");
+        console.error("Logout failed:", error);
+        alert("Logout failed. Please try again.");
       }
     }
   };
 
   const handleSendOTP = async () => {
     if (!email || !email.includes('@')) {
-      alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      alert('Please enter a valid email address.');
       return;
     }
 
@@ -77,10 +77,10 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
     try {
       await sendEmailOTP(email);
       setStep('otp');
-      alert('Ein 6-stelliger Code wurde an Ihre E-Mail gesendet!');
+      alert('A 6-digit code has been sent to your email!');
     } catch (error: any) {
-      console.error('OTP senden fehlgeschlagen:', error);
-      alert('Fehler beim Senden des Codes. Bitte versuchen Sie es erneut.');
+      console.error('Failed to send OTP:', error);
+      alert('Error sending code. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +88,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
   const handleVerifyOTP = async () => {
     if (!otpCode || otpCode.length !== 6) {
-      alert('Bitte geben Sie den 6-stelligen Code ein.');
+      alert('Please enter the 6-digit code.');
       return;
     }
 
@@ -99,14 +99,14 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
       // Check if user already has a name
       if (result.user?.user_metadata?.full_name) {
         // User already registered, just log in
-        console.log('Benutzer angemeldet:', result.user);
+        console.log('User logged in:', result.user);
       } else {
         // New user, collect profile info
         setStep('profile');
       }
     } catch (error: any) {
-      console.error('OTP Verifizierung fehlgeschlagen:', error);
-      alert('Ungültiger Code. Bitte überprüfen Sie Ihre E-Mail und versuchen Sie es erneut.');
+      console.error('OTP verification failed:', error);
+      alert('Invalid code. Please check your email and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -115,13 +115,13 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
   const handleCompleteProfile = async () => {
     // Validate required fields
     if (!fullName || fullName.trim().length < 2) {
-      alert('Bitte geben Sie Ihren Namen ein.');
+      alert('Please enter your name.');
       return;
     }
 
     // Validate phone number (optional but if provided, should be valid)
     if (phoneNumber && !/^[\d\s\+\-\(\)]+$/.test(phoneNumber)) {
-      alert('Bitte geben Sie eine gültige Telefonnummer ein.');
+      alert('Please enter a valid phone number.');
       return;
     }
 
@@ -132,12 +132,12 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
       const age = today.getFullYear() - birthDate.getFullYear();
 
       if (age < 13) {
-        alert('Sie müssen mindestens 13 Jahre alt sein.');
+        alert('You must be at least 13 years old.');
         return;
       }
 
       if (age > 120) {
-        alert('Bitte geben Sie ein gültiges Geburtsdatum ein.');
+        alert('Please enter a valid date of birth.');
         return;
       }
     }
@@ -151,11 +151,11 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
         location: location.trim() || undefined,
       });
 
-      console.log('Profil erstellt:', { fullName, phoneNumber, dateOfBirth, location });
+      console.log('Profile created:', { fullName, phoneNumber, dateOfBirth, location });
       // User will be automatically updated via auth state change
     } catch (error: any) {
-      console.error('Profil-Update fehlgeschlagen:', error);
-      alert('Fehler beim Speichern Ihres Profils. Bitte versuchen Sie es erneut.');
+      console.error('Profile update failed:', error);
+      alert('Error saving your profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,46 +167,46 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
       items: [
         {
           icon: User,
-          label: "Mein Profil",
+          label: "My Profile",
           onClick: () => setActivePage('profile'),
           disabled: !user
         },
         {
           icon: Heart,
-          label: "Gespeicherte Events",
+          label: "Saved Events",
           onClick: () => setActivePage('saved-events'),
           disabled: !user
         },
         {
           icon: Bell,
-          label: "Benachrichtigungen",
-          onClick: () => alert("Benachrichtigungen werden in einer zukünftigen Version verfügbar sein!"),
+          label: "Notifications",
+          onClick: () => alert("Notifications will be available in a future version!"),
           disabled: !user
         }
       ]
     },
     {
-      title: "APP-EINSTELLUNGEN",
+      title: "APP SETTINGS",
       items: [
         {
           icon: Globe,
-          label: "Sprache & Region",
+          label: "Language & Region",
           onClick: () => setActivePage('language')
         },
         {
           icon: Palette,
-          label: "Darstellung",
-          onClick: () => console.log("Darstellung öffnen")
+          label: "Appearance",
+          onClick: () => console.log("Open appearance")
         },
         {
           icon: MapPin,
-          label: "Standort-Einstellungen",
-          onClick: () => console.log("Standort-Einstellungen öffnen")
+          label: "Location Settings",
+          onClick: () => console.log("Open location settings")
         },
         {
           icon: HardDrive,
-          label: "Cache & Daten",
-          onClick: () => console.log("Cache & Daten öffnen")
+          label: "Cache & Data",
+          onClick: () => console.log("Open cache & data")
         }
       ]
     },
@@ -215,23 +215,23 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
       items: [
         {
           icon: MessageCircle,
-          label: "Feedback senden",
-          onClick: () => console.log("Feedback senden")
+          label: "Send Feedback",
+          onClick: () => console.log("Send feedback")
         },
         {
           icon: HelpCircle,
-          label: "Hilfe & FAQ",
-          onClick: () => console.log("Hilfe & FAQ öffnen")
+          label: "Help & FAQ",
+          onClick: () => console.log("Open help & FAQ")
         },
         {
           icon: Info,
-          label: "Über WhatsUP",
-          onClick: () => console.log("Über WhatsUP öffnen")
+          label: "About WhatsUP",
+          onClick: () => console.log("Open about WhatsUP")
         },
         {
           icon: Mail,
-          label: "Kontakt",
-          onClick: () => console.log("Kontakt öffnen")
+          label: "Contact",
+          onClick: () => console.log("Open contact")
         }
       ]
     }
@@ -251,7 +251,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-lg font-medium">Einstellungen</h1>
+            <h1 className="text-lg font-medium">Settings</h1>
           </div>
         </div>
       </div>
@@ -275,7 +275,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">{user.user_metadata?.full_name || 'Benutzer'}</p>
+                  <p className="font-medium">{user.user_metadata?.full_name || 'User'}</p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
@@ -286,9 +286,9 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                 <div className="text-center space-y-2">
                   <User className="w-12 h-12 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Nicht angemeldet</p>
+                    <p className="font-medium">Not signed in</p>
                     <p className="text-sm text-muted-foreground">
-                      Melden Sie sich an, um Events zu speichern
+                      Sign in to save events
                     </p>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                   <div className="space-y-3">
                     <Input
                       type="email"
-                      placeholder="ihre.email@beispiel.de"
+                      placeholder="your.email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isSubmitting}
@@ -309,10 +309,10 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                       className="w-full"
                     >
                       <Mail className="w-4 h-4 mr-2" />
-                      {isSubmitting ? 'Wird gesendet...' : 'Code an E-Mail senden'}
+                      {isSubmitting ? 'Sending...' : 'Send Code to Email'}
                     </Button>
                     <p className="text-xs text-center text-muted-foreground">
-                      Sie erhalten einen 6-stelligen Code per E-Mail
+                      You will receive a 6-digit code via email
                     </p>
                   </div>
                 )}
@@ -320,7 +320,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                 {step === 'otp' && (
                   <div className="space-y-3">
                     <div className="text-center">
-                      <p className="text-sm font-medium">Code gesendet an:</p>
+                      <p className="text-sm font-medium">Code sent to:</p>
                       <p className="text-sm text-muted-foreground">{email}</p>
                     </div>
                     <Input
@@ -337,7 +337,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                       disabled={isSubmitting || otpCode.length !== 6}
                       className="w-full"
                     >
-                      {isSubmitting ? 'Wird überprüft...' : 'Code bestätigen'}
+                      {isSubmitting ? 'Verifying...' : 'Confirm Code'}
                     </Button>
                     <Button
                       variant="ghost"
@@ -346,7 +346,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                       disabled={isSubmitting}
                       className="w-full"
                     >
-                      E-Mail ändern
+                      Change Email
                     </Button>
                   </div>
                 )}
@@ -354,19 +354,19 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                 {step === 'profile' && (
                   <div className="space-y-3">
                     <div className="text-center space-y-1">
-                      <p className="text-sm font-medium">Vervollständigen Sie Ihr Profil</p>
+                      <p className="text-sm font-medium">Complete Your Profile</p>
                       <p className="text-xs text-muted-foreground">
-                        * Pflichtfelder
+                        * Required fields
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Vollständiger Name *
+                        Full Name *
                       </label>
                       <Input
                         type="text"
-                        placeholder="Max Mustermann"
+                        placeholder="John Doe"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         disabled={isSubmitting}
@@ -376,11 +376,11 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Telefonnummer
+                        Phone Number
                       </label>
                       <Input
                         type="tel"
-                        placeholder="+41 79 123 45 67"
+                        placeholder="+1 234 567 8900"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         disabled={isSubmitting}
@@ -389,7 +389,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Geburtsdatum
+                        Date of Birth
                       </label>
                       <Input
                         type="date"
@@ -402,11 +402,11 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Standort
+                        Location
                       </label>
                       <Input
                         type="text"
-                        placeholder="Zürich, Schweiz"
+                        placeholder="New York, USA"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         disabled={isSubmitting}
@@ -418,11 +418,11 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                       disabled={isSubmitting || !fullName.trim()}
                       className="w-full"
                     >
-                      {isSubmitting ? 'Wird gespeichert...' : 'Profil erstellen'}
+                      {isSubmitting ? 'Saving...' : 'Create Profile'}
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground">
-                      Diese Informationen helfen uns, Ihre Erfahrung zu personalisieren
+                      This information helps us personalize your experience
                     </p>
                   </div>
                 )}
@@ -478,7 +478,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                 disabled={loading}
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Ausloggen
+                Log Out
               </Button>
             </div>
           )}
