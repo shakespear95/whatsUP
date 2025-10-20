@@ -399,10 +399,13 @@ async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
 async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchRequest, weather: any) {
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
-  if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ No Anthropic API key, returning unenhanced events');
+  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.trim() === '') {
+    console.log('⚠️ No Anthropic API key found in environment');
+    console.log('🔍 Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('ANTHROP')));
     return events;
   }
+
+  console.log('✅ Anthropic API key found, length:', ANTHROPIC_API_KEY.length);
 
   console.log(`🤖 Claude Agent enhancing ${events.length} events...`);
 
@@ -451,9 +454,12 @@ Return the enhanced events as a JSON array.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', errorText);
+      console.error('❌ Claude API error:', response.status, response.statusText);
+      console.error('Error details:', errorText);
       return events; // Return original events if enhancement fails
     }
+
+    console.log('✅ Claude API response received');
 
     const data = await response.json();
     const content = data.content[0].text;
@@ -675,9 +681,19 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
   const events: any[] = [];
 
   try {
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    // Find JSON array in the content - extract only the array part
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
-      const parsedEvents = JSON.parse(jsonMatch[0]);
+      // Clean the extracted JSON - remove any trailing text after the closing bracket
+      let jsonString = jsonMatch[0];
+
+      // Find the last closing bracket and truncate everything after it
+      const lastBracketIndex = jsonString.lastIndexOf(']');
+      if (lastBracketIndex !== -1) {
+        jsonString = jsonString.substring(0, lastBracketIndex + 1);
+      }
+
+      const parsedEvents = JSON.parse(jsonString);
       const eventArray = Array.isArray(parsedEvents) ? parsedEvents : [parsedEvents];
 
       eventArray.forEach((event: any) => {
