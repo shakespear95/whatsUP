@@ -90,52 +90,52 @@ const categoryData = {
 // ERWEITERTE Quick-Filter laut Spezifikation
 const quickFiltersData = [
   // Barrierefreiheit (vollständig)
-  { id: 'wheelchair', label: '♿ Rollstuhlgerecht', category: 'accessibility' },
-  { id: 'barrierefrei', label: '👁️ Barrierefrei', category: 'accessibility' },
-  { id: 'assistenzhunde', label: '🦮 Assistenzhunde OK', category: 'accessibility' },
-  { id: 'hoergeschaedigt', label: '🔊 Hörgeschädigt-geeignet', category: 'accessibility' },
-  { id: 'sehbehindert', label: '👁️ Sehbehindert-geeignet', category: 'accessibility' },
-  { id: 'leichte-sprache', label: '📖 Leichte Sprache', category: 'accessibility' },
+  { id: 'wheelchair', label: '♿ Wheelchair Accessible', category: 'accessibility' },
+  { id: 'barrierefrei', label: '👁️ Accessible', category: 'accessibility' },
+  { id: 'assistenzhunde', label: '🦮 Service Dogs OK', category: 'accessibility' },
+  { id: 'hoergeschaedigt', label: '🔊 Hearing Impaired Friendly', category: 'accessibility' },
+  { id: 'sehbehindert', label: '👁️ Visually Impaired Friendly', category: 'accessibility' },
+  { id: 'leichte-sprache', label: '📖 Easy Language', category: 'accessibility' },
   
   // Altersgruppen (vollständig)
-  { id: 'babies', label: '👶 0-3 Jahre', category: 'age' },
-  { id: 'kleinkinder', label: '🧒 4-6 Jahre', category: 'age' },
-  { id: 'kinder', label: '👦 7-9 Jahre', category: 'age' },
-  { id: 'jugend', label: '👧 10-12 Jahre', category: 'age' },
-  { id: 'teens', label: '🧑 13-16 Jahre', category: 'age' },
-  { id: 'adults-only', label: '🔞 Nur Erwachsene 18+', category: 'age' },
+  { id: 'babies', label: '👶 0-3 Years', category: 'age' },
+  { id: 'kleinkinder', label: '🧒 4-6 Years', category: 'age' },
+  { id: 'kinder', label: '👦 7-9 Years', category: 'age' },
+  { id: 'jugend', label: '👧 10-12 Years', category: 'age' },
+  { id: 'teens', label: '🧑 13-16 Years', category: 'age' },
+  { id: 'adults-only', label: '🔞 Adults Only 18+', category: 'age' },
   
   // Location-Features (vollständig)
   { id: 'indoor', label: '🏠 Indoor', category: 'location' },
   { id: 'outdoor', label: '☀️ Outdoor', category: 'location' },
-  { id: 'wetterunabhängig', label: '🌧️ Wetterunabhängig', category: 'location' },
-  { id: 'parking', label: '🅿️ Parkplätze', category: 'features' },
-  { id: 'oev', label: '🚇 ÖV-Nähe', category: 'features' },
-  { id: 'aufzug', label: '♿ Aufzug vorhanden', category: 'features' },
+  { id: 'wetterunabhängig', label: '🌧️ Weather Independent', category: 'location' },
+  { id: 'parking', label: '🅿️ Parking Available', category: 'features' },
+  { id: 'oev', label: '🚇 Near Public Transport', category: 'features' },
+  { id: 'aufzug', label: '♿ Elevator Available', category: 'features' },
   
   // Event-Eigenschaften (vollst��ndig)
-  { id: 'gratis', label: '🆓 Nur Gratis', category: 'price' },
-  { id: 'vorverkauf', label: '🎟️ Vorverkauf', category: 'price' },
-  { id: 'fotografieren', label: '📸 Fotografieren erlaubt', category: 'features' },
-  { id: 'hunde', label: '🐕 Hunde erlaubt', category: 'features' },
-  { id: 'gruppen', label: '👥 Gruppen-geeignet', category: 'special' },
-  { id: 'romantisch', label: '💑 Romantisch', category: 'special' },
+  { id: 'gratis', label: '🆓 Free Only', category: 'price' },
+  { id: 'vorverkauf', label: '🎟️ Advance Booking', category: 'price' },
+  { id: 'fotografieren', label: '📸 Photography Allowed', category: 'features' },
+  { id: 'hunde', label: '🐕 Dogs Allowed', category: 'features' },
+  { id: 'gruppen', label: '👥 Group Suitable', category: 'special' },
+  { id: 'romantisch', label: '💑 Romantic', category: 'special' },
   
   // Verpflegung (vollständig)
-  { id: 'bar', label: '🍺 Mit Bar', category: 'catering' },
-  { id: 'restaurant', label: '🍽️ Mit Restaurant', category: 'catering' },
-  { id: 'cafe', label: '☕ Café vorhanden', category: 'catering' },
-  { id: 'vegetarisch', label: '🥗 Vegetarisch/Vegan', category: 'catering' },
+  { id: 'bar', label: '🍺 With Bar', category: 'catering' },
+  { id: 'restaurant', label: '🍽️ With Restaurant', category: 'catering' },
+  { id: 'cafe', label: '☕ Café Available', category: 'catering' },
+  { id: 'vegetarisch', label: '🥗 Vegetarian/Vegan', category: 'catering' },
   { id: 'street-food', label: '🍔 Street Food', category: 'catering' },
   
   // Special Interest (vollständig)
-  { id: 'geheim-underground', label: '🔐 Geheim/Underground', category: 'special' },
+  { id: 'geheim-underground', label: '🔐 Secret/Underground', category: 'special' },
   { id: 'last-minute', label: '⚡ Last-Minute', category: 'special' },
   { id: 'mystery-event', label: '🎲 Mystery Event', category: 'special' },
   { id: 'after-hours', label: '🌙 After Hours', category: 'special' },
   { id: 'pop-up', label: '🎪 Pop-up', category: 'special' },
   { id: 'trending', label: '🔥 Trending', category: 'special' },
-  { id: 'exklusiv', label: '�� Exklusiv', category: 'special' },
+  { id: 'exklusiv', label: '💎 Exclusive', category: 'special' },
   { id: 'premiere', label: '🆕 Premiere', category: 'special' },
   { id: 'instagrammable', label: '📸 Instagrammable', category: 'special' }
 ];
@@ -347,7 +347,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
 
   const getBudgetLabel = () => {
     if (filters.budget.onlyFree) return 'Gratis';
-    if (filters.budget.max >= 200) return `Bis CHF ${filters.budget.max}+`;
+    if (filters.budget.max >= 300) return `Bis CHF ${filters.budget.max}+`;
     return `Bis CHF ${filters.budget.max}`;
   };
 
@@ -607,7 +607,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           Zurücksetzen
                         </Button>
                         <Button onClick={() => setShowCategoriesModal(false)}>
-                          Übernehmen
+                          Apply
                         </Button>
                       </div>
                     </div>
@@ -771,10 +771,10 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   className="w-full justify-between h-12 md:h-10"
                 >
                   <span>
-                    {filters.budget.onlyFree 
-                      ? "Gratis" 
-                      : filters.budget.max !== 200 
-                        ? `CHF ${filters.budget.max}` 
+                    {filters.budget.onlyFree
+                      ? "Gratis"
+                      : filters.budget.max !== 300
+                        ? `CHF ${filters.budget.max}`
                         : "Choose budget"
                     }
                   </span>
@@ -788,13 +788,13 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                 <div className="flex items-center gap-4">
                   <Checkbox
                     checked={filters.budget.onlyFree}
-                    onCheckedChange={(checked) => 
-                      updateFilters({ 
-                        budget: { 
-                          ...filters.budget, 
+                    onCheckedChange={(checked) =>
+                      updateFilters({
+                        budget: {
+                          ...filters.budget,
                           onlyFree: !!checked,
-                          max: checked ? 0 : 200 
-                        } 
+                          max: checked ? 0 : 300
+                        }
                       })
                     }
                   />
@@ -804,19 +804,19 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                   <div className="space-y-2">
                     <Slider
                       value={[filters.budget.max]}
-                      onValueChange={(value) => 
-                        updateFilters({ 
-                          budget: { ...filters.budget, max: value[0] } 
+                      onValueChange={(value) =>
+                        updateFilters({
+                          budget: { ...filters.budget, max: value[0] }
                         })
                       }
-                      max={200}
+                      max={300}
                       min={0}
                       step={5}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>CHF 0</span>
-                      <span>CHF 200+</span>
+                      <span>CHF 300+</span>
                     </div>
                   </div>
                 )}
@@ -946,7 +946,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           onClick={() => setShowExtendedFilters(!showExtendedFilters)}
                           className="w-full justify-between p-0 h-auto font-medium"
                         >
-                          <span>Erweiterte Filter</span>
+                          <span>Advanced Filters</span>
                           <ChevronDown className={`w-4 h-4 transition-transform ${showExtendedFilters ? 'rotate-180' : ''}`} />
                         </Button>
                         
@@ -1000,7 +1000,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           className="w-full"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Neuen Filter beantragen
+                          Request New Filter
                         </Button>
                       </div>
 
@@ -1010,19 +1010,19 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           variant="ghost"
                           onClick={() => updateFilters({ quickFilters: [] })}
                         >
-                          Alle zurücksetzen
+                          Reset All
                         </Button>
                         <div className="flex gap-2">
                           <Button 
                             variant="outline"
                             onClick={() => setShowFilterSelection(false)}
                           >
-                            Abbrechen
+                            Cancel
                           </Button>
                           <Button 
                             onClick={() => setShowFilterSelection(false)}
                           >
-                            Übernehmen ({filters.quickFilters.length})
+                            Apply ({filters.quickFilters.length})
                           </Button>
                         </div>
                       </div>
@@ -1185,7 +1185,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
       <Dialog open={showFilterRequest} onOpenChange={setShowFilterRequest}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Neuen Filter beantragen</DialogTitle>
+            <DialogTitle>Request New Filter</DialogTitle>
             <DialogDescription>
               Schlagen Sie einen neuen Filter für WhatsUP vor
             </DialogDescription>
