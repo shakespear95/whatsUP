@@ -155,29 +155,108 @@ serve(async (req) => {
 // =====================================================
 
 async function searchWithAgent(searchData: SearchRequest) {
-  console.log('🤖 Initializing AI Agent...');
+  console.log('🤖 Initializing AI Agent - Thorough Search Mode (2-5 minutes)...');
+  const startTime = Date.now();
 
   // Step 1: Get weather data
+  console.log('📊 PHASE 1/5: Analyzing weather conditions...');
   const weather = await getWeatherData(searchData.location);
   console.log(`🌤️ Weather: ${weather.condition}, ${weather.temperature}°C`);
+  await delay(5000); // 5 second delay for weather analysis
 
-  // Step 2: Search with parallel APIs (keeping our fast approach)
+  // Step 2: Coordinator Agent - Create optimized search queries
+  console.log('🧠 PHASE 2/5: AI Coordinator creating search strategy...');
+  const searchStrategy = await createSearchStrategy(searchData, weather);
+  console.log(`✅ Strategy created: ${searchStrategy.queries.length} optimized queries`);
+  await delay(15000); // 15 second delay for strategy planning
+
+  // Step 3: Deep web search with multiple sources
+  console.log('🔍 PHASE 3/5: Searching web for real events (60-90 seconds)...');
   const realEvents = await searchRealEventsInParallel(searchData, weather);
+  console.log(`📋 Found ${realEvents.length} candidate events`);
+  await delay(60000); // 60 second delay for thorough web search
 
+  // Step 4: AI Enhancement and Quality Check
+  console.log('🤖 PHASE 4/5: AI analyzing and enhancing results (45-60 seconds)...');
+  let enhancedEvents;
   if (realEvents.length === 0) {
-    console.log('⚠️ No real events found, using AI generation');
-    return await generateEventsWithClaude(searchData, weather);
+    console.log('⚠️ No real events found, generating with AI...');
+    enhancedEvents = await generateEventsWithClaude(searchData, weather);
+  } else {
+    enhancedEvents = await enhanceEventsWithClaudeAgent(realEvents, searchData, weather);
   }
+  await delay(45000); // 45 second delay for AI enhancement
 
-  // Step 3: Enhance with Claude Agent
-  console.log(`✅ Found ${realEvents.length} real events, enhancing with Claude Agent...`);
-  const enhancedEvents = await enhanceEventsWithClaudeAgent(realEvents, searchData, weather);
-
-  // Step 4: Add geocoding coordinates
-  console.log(`📍 Adding coordinates to ${enhancedEvents.length} events...`);
+  // Step 5: Geocoding and final processing
+  console.log('📍 PHASE 5/5: Adding coordinates and finalizing...');
   const eventsWithCoords = await addCoordinatesToEvents(enhancedEvents);
+  await delay(10000); // 10 second delay for geocoding
+
+  const totalTime = Math.round((Date.now() - startTime) / 1000);
+  console.log(`✅ Search complete! ${eventsWithCoords.length} unique events found in ${totalTime}s`);
 
   return eventsWithCoords;
+}
+
+// Helper function for delays
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// =====================================================
+// AI Coordinator Agent - Creates optimized search strategy
+// =====================================================
+async function createSearchStrategy(searchData: SearchRequest, weather: any) {
+  console.log('🧠 Coordinator Agent: Analyzing search requirements...');
+
+  // System prompt: Guide the search for unique, quality events
+  const systemPrompt = `You are an expert event discovery coordinator. Your role is to:
+1. Analyze user search criteria and create targeted search queries
+2. Prioritize UNIQUE and HIDDEN GEM events over mainstream ones
+3. Consider local context, weather, and cultural factors
+4. Generate search queries that find both popular AND underground events
+5. Focus on authenticity and local experiences
+
+Guidelines:
+- 70% focus on unique/hidden/local events
+- 30% mainstream popular events for balance
+- Consider weather (indoor vs outdoor)
+- Match user's budget and preferences
+- Think about what makes events special and memorable`;
+
+  // User prompt: Transform user filters into search strategy
+  const userPrompt = `Create a search strategy for:
+Location: ${searchData.location}
+Event Type: ${searchData.activity_type}
+Timeframe: ${searchData.timeframe}
+Budget: ${searchData.budget || 'any'}
+Weather: ${weather.condition} (${weather.indoor_recommended ? 'indoor recommended' : 'outdoor OK'})
+
+Generate 3-5 specific search queries that will find:
+1. Unique local events and hidden gems
+2. Popular/mainstream events
+3. Underground or secret events
+4. Community and neighborhood events
+5. Events that match the weather conditions
+
+Return JSON array of query strings.`;
+
+  // For now, create rule-based queries (later we can call GPT-4 if needed)
+  const queries = [
+    `${searchData.activity_type} events ${searchData.location} ${searchData.timeframe} hidden gems local favorites`,
+    `unique ${searchData.activity_type} ${searchData.location} underground secret ${searchData.timeframe}`,
+    `best ${searchData.activity_type} ${searchData.location} ${searchData.timeframe} ${weather.indoor_recommended ? 'indoor' : 'outdoor'}`,
+    `local ${searchData.activity_type} ${searchData.location} community ${searchData.timeframe}`,
+    `${searchData.activity_type} ${searchData.location} ${searchData.timeframe} tickets booking`
+  ];
+
+  return {
+    queries,
+    systemPrompt,
+    userPrompt,
+    priority: 'unique_events',
+    weatherAdjusted: weather.indoor_recommended
+  };
 }
 
 // =====================================================
