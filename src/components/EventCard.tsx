@@ -326,12 +326,12 @@ export function EventCard({
             </div>
             
             {/* Description */}
-            {description && (
-              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-3 flex-grow">
+            {description && description.trim() !== '' && (
+              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-3">
                 {description}
               </p>
             )}
-            
+
             {/* Special Feature */}
             {specialFeature && (
               <div className="flex items-center gap-2 mb-3">
@@ -339,9 +339,12 @@ export function EventCard({
                 <span className="text-sm text-orange-600 font-medium">{specialFeature}</span>
               </div>
             )}
-            
+
+            {/* Spacer to push bottom content down */}
+            <div className="flex-grow"></div>
+
             {/* Bottom Row - Tickets & Action */}
-            <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between pt-3 border-t border-border/50">
               <div className="flex-1">
                 {renderTicketInfo()}
               </div>
