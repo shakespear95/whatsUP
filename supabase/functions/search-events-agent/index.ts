@@ -668,27 +668,30 @@ async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchReq
 
   console.log(`🤖 Claude Agent enhancing ${events.length} events...`);
 
-  const prompt = `You are an expert event curator. Below are real events found from web search.
+  const prompt = `You are an expert event curator. Enhance these real events from web search.
 
-## Your Task:
-1. Enhance descriptions (make them engaging and informative)
-2. Verify venue types (indoor/outdoor) based on venue names
-3. Add special features that make each event unique
-4. Improve booking information
-5. Consider weather: ${weather.condition}, ${weather.temperature}°C
-6. ${weather.indoor_recommended ? 'PRIORITIZE INDOOR events and FLAG outdoor events with weather warning' : 'Events look good for current weather'}
+CRITICAL: Return ONLY valid JSON array. No markdown, no code blocks, no explanations.
 
-## Events to Enhance:
+Events to enhance:
 ${JSON.stringify(events, null, 2)}
 
-## Requirements:
-- Keep all original data (title, date, location, ticket_link, source)
-- Enhance descriptions to 2-3 engaging sentences
-- Add special_feature highlighting what's unique
-- ${weather.indoor_recommended ? 'Add weather_warning for outdoor events' : ''}
-- Return ONLY the JSON array, no markdown or explanations
+Tasks:
+1. Enhance descriptions (2-3 engaging sentences)
+2. Add special_feature (what's unique about this event)
+3. Keep ALL original fields unchanged (title, date, location, ticket_link, source, etc.)
+4. Weather context: ${weather.condition}, ${weather.temperature}°C
 
-Return the enhanced events as a JSON array.`;
+IMPORTANT:
+- Return ONLY the JSON array starting with [ and ending with ]
+- No ```json``` code blocks
+- No explanatory text before or after
+- All strings must use valid JSON escaping
+- No trailing commas
+
+Example of CORRECT format:
+[{"title":"Event 1","description":"Enhanced text",...},{"title":"Event 2",...}]
+
+Now return the enhanced events:`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -723,24 +726,48 @@ Return the enhanced events as a JSON array.`;
     const data = await response.json();
     const content = data.content[0].text;
 
-    // Extract JSON from response (non-greedy)
-    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    console.log('📄 Claude response (first 500 chars):', content.substring(0, 500));
 
-    if (!jsonMatch) {
-      console.log('⚠️ Claude returned invalid JSON, using original events');
+    // Try multiple JSON extraction strategies
+    let enhancedEvents = null;
+
+    // Strategy 1: Look for JSON code block
+    const codeBlockMatch = content.match(/```json\s*(\[[\s\S]*?\])\s*```/);
+    if (codeBlockMatch) {
+      try {
+        enhancedEvents = JSON.parse(codeBlockMatch[1]);
+        console.log('✅ Extracted JSON from code block');
+      } catch (e) {
+        console.log('⚠️ Code block JSON invalid:', e.message);
+      }
+    }
+
+    // Strategy 2: Find array directly (greedy - capture everything until last ])
+    if (!enhancedEvents) {
+      const arrayMatch = content.match(/\[([\s\S]*)\]/);
+      if (arrayMatch) {
+        try {
+          // Clean up common JSON issues
+          let jsonString = '[' + arrayMatch[1] + ']';
+          // Remove trailing commas before closing brackets
+          jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+          // Fix unescaped quotes in strings (basic)
+          enhancedEvents = JSON.parse(jsonString);
+          console.log('✅ Extracted JSON from array match');
+        } catch (e) {
+          console.log('⚠️ Array match JSON invalid:', e.message);
+          console.log('📄 Attempted JSON (first 300 chars):', jsonString?.substring(0, 300));
+        }
+      }
+    }
+
+    // Strategy 3: Return original events if all parsing failed
+    if (!enhancedEvents) {
+      console.log('⚠️ All JSON extraction strategies failed, using original events');
       return events;
     }
 
-    // Truncate at last closing bracket to ensure valid JSON
-    let jsonString = jsonMatch[0];
-    const lastBracketIndex = jsonString.lastIndexOf(']');
-    if (lastBracketIndex !== -1) {
-      jsonString = jsonString.substring(0, lastBracketIndex + 1);
-    }
-
-    const enhancedEvents = JSON.parse(jsonString);
     console.log(`✅ Claude Agent enhanced ${enhancedEvents.length} events`);
-
     return enhancedEvents;
   } catch (error) {
     console.error('Claude enhancement error:', error);
