@@ -530,14 +530,17 @@ function processOpenAIResults(content: string, searchData: SearchRequest) {
       const parsedEvents = JSON.parse(jsonString);
 
       parsedEvents.forEach((event: any) => {
+        // Use event's specific location if provided, otherwise fall back to venue or search location
+        const eventLocation = event.location || event.venue || searchData.location;
+
         events.push({
           title: event.title || 'Event',
           description: event.description || '',
           date: event.date || getDateInTimeframe(searchData.timeframe, 0),
           time: event.time || '19:00',
-          location: searchData.location,
-          venue: event.venue || searchData.location,
-          address: event.address || `${searchData.location} - See website`,
+          location: eventLocation,
+          venue: event.venue || eventLocation,
+          address: event.address || `${eventLocation} - See website`,
           price: event.price || 'See website',
           category: searchData.activity_type,
           special_feature: event.special_feature || 'Web search result',
@@ -1004,14 +1007,17 @@ function processPerplexityResults(content: string, searchData: SearchRequest) {
       const eventArray = Array.isArray(parsedEvents) ? parsedEvents : [parsedEvents];
 
       eventArray.forEach((event: any) => {
+        // Use event's specific location if provided, otherwise fall back to venue or search location
+        const eventLocation = event.location || event.venue || searchData.location;
+
         events.push({
           title: cleanEventTitle(event.title || event.name || 'Event'),
-          description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
+          description: event.description || `${searchData.activity_type} event in ${eventLocation}`,
           date: event.date || getDateInTimeframe(searchData.timeframe, 0),
           time: event.time || getRandomTime(),
-          location: searchData.location,
-          venue: event.venue || `${searchData.location} Venue`,
-          address: event.address || searchData.location,
+          location: eventLocation,
+          venue: event.venue || eventLocation,
+          address: event.address || eventLocation,
           price: event.price || 'See website',
           category: searchData.activity_type,
           special_feature: 'Real event from web search',
