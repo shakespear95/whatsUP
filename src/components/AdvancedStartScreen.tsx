@@ -207,28 +207,25 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
       async (position) => {
         const { latitude, longitude } = position.coords;
 
-        // Reverse geocode to get actual place name
+        // Reverse geocode to get actual place name using BigDataCloud (CORS-friendly)
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`,
-            {
-              headers: {
-                'User-Agent': 'WhatsUP-Event-Finder/1.0',
-              },
-            }
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
           );
+
+          if (!response.ok) {
+            throw new Error('Geocoding failed');
+          }
 
           const data = await response.json();
 
-          // Get city, town, or village name
-          const placeName = data.address?.city ||
-                           data.address?.town ||
-                           data.address?.village ||
-                           data.address?.county ||
-                           data.address?.state ||
+          // Get city, town, or locality name
+          const placeName = data.city ||
+                           data.locality ||
+                           data.principalSubdivision ||
                            `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
-          const country = data.address?.country || '';
+          const country = data.countryName || '';
           const locationName = country ? `${placeName}, ${country}` : placeName;
 
           console.log('📍 Detected location:', locationName);
