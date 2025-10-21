@@ -359,7 +359,10 @@ export default function App() {
     let events = searchResults.filter(event => {
       // Favorites-only filter (applied first)
       if (filters.showFavoritesOnly === true) {
-        if (!favoriteEvents.has(event.id)) return false;
+        if (!favoriteEvents.has(event.id)) {
+          console.log(`❌ Event "${event.title}" filtered: Not in favorites`);
+          return false;
+        }
       }
 
       // Keywords filter

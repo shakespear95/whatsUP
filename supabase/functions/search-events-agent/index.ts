@@ -668,28 +668,27 @@ async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchReq
 
   console.log(`🤖 Claude Agent enhancing ${events.length} events...`);
 
-  const prompt = `Enhance event descriptions. Return ONLY valid JSON array.
+  const prompt = `You must enhance ALL ${events.length} events provided. Return the complete JSON array with every event included.
 
-Input events:
+Input events (${events.length} total):
 ${JSON.stringify(events, null, 2)}
 
 Instructions:
-1. Improve description field (2-3 sentences, engaging)
-2. Add special_feature field (unique aspect)
-3. Keep all other fields EXACTLY as-is
-4. Use simple language, avoid special characters
+1. Improve description for EACH event (2-3 sentences)
+2. Add special_feature to EACH event
+3. Keep ALL other fields unchanged
+4. Process ALL ${events.length} events - do not skip any
 5. Weather: ${weather.condition}, ${weather.temperature}°C
 
-CRITICAL RULES:
+CRITICAL:
+- Return ALL ${events.length} events in the array
+- Do NOT filter or remove any events
+- If you can't enhance an event, keep it as-is
 - Return ONLY JSON array: [{...},{...}]
-- NO markdown, NO code blocks, NO text outside array
-- Use double quotes for all strings
-- Escape quotes inside strings with backslash
-- NO trailing commas
-- NO newlines inside string values (use spaces)
-- NO apostrophes or special Unicode quotes
+- NO markdown, NO explanations
+- Use valid JSON escaping
 
-Return the JSON array now:`;
+You MUST return exactly ${events.length} events:`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -798,6 +797,13 @@ Return the JSON array now:`;
     }
 
     console.log(`✅ Claude Agent enhanced ${enhancedEvents.length} events`);
+
+    // Safety check: if Claude returned fewer events than input, warn and return all
+    if (enhancedEvents.length < events.length) {
+      console.warn(`⚠️ Claude returned ${enhancedEvents.length}/${events.length} events - using original events to avoid data loss`);
+      return events;
+    }
+
     return enhancedEvents;
   } catch (error) {
     console.error('Claude enhancement error:', error);
