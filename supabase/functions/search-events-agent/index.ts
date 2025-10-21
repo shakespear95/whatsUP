@@ -1069,23 +1069,37 @@ function getDateRange(timeframe: string) {
 
   switch (timeframe.toLowerCase()) {
     case 'today':
+      // Today: from now until end of day
       endDate.setHours(23, 59, 59);
       break;
     case 'this week':
-      endDate.setDate(now.getDate() + 7);
+      // This week: from now until end of Sunday
+      const daysUntilSunday = 7 - now.getDay();
+      endDate.setDate(now.getDate() + daysUntilSunday);
+      endDate.setHours(23, 59, 59);
       break;
     case 'next week':
-      startDate.setDate(now.getDate() + 7);
-      endDate.setDate(now.getDate() + 14);
+      // Next week: Monday to Sunday of next week
+      const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7;
+      startDate.setDate(now.getDate() + daysUntilNextMonday);
+      startDate.setHours(0, 0, 0);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59);
       break;
     case 'this month':
-      endDate.setMonth(now.getMonth() + 1);
+      // This month: from now until end of current month
+      endDate.setMonth(now.getMonth() + 1, 0); // Last day of current month
+      endDate.setHours(23, 59, 59);
       break;
     case 'next month':
-      startDate.setMonth(now.getMonth() + 1);
-      endDate.setMonth(now.getMonth() + 2);
+      // Next month: 1st to last day of next month
+      startDate.setMonth(now.getMonth() + 1, 1);
+      startDate.setHours(0, 0, 0);
+      endDate.setMonth(now.getMonth() + 2, 0); // Last day of next month
+      endDate.setHours(23, 59, 59);
       break;
     default:
+      // Default: next 30 days
       endDate.setDate(now.getDate() + 30);
   }
 
@@ -1101,22 +1115,38 @@ function getDateInTimeframe(timeframe: string, offset: number): string {
 
   switch (timeframe.toLowerCase()) {
     case 'today':
+      // Spread events across today
       date.setHours(date.getHours() + offset * 2);
       break;
     case 'this week':
-      date.setDate(now.getDate() + offset);
+      // Spread events from now until end of this week
+      const daysUntilSunday = 7 - now.getDay();
+      const dayOffset = Math.floor((offset * daysUntilSunday) / 10); // Spread across remaining days
+      date.setDate(now.getDate() + dayOffset);
       break;
     case 'next week':
-      date.setDate(now.getDate() + 7 + offset);
+      // Spread events across next week (Monday to Sunday)
+      const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7;
+      const nextWeekStart = new Date(now);
+      nextWeekStart.setDate(now.getDate() + daysUntilNextMonday);
+      date.setDate(nextWeekStart.getDate() + (offset % 7)); // Spread across 7 days
       break;
     case 'this month':
-      date.setDate(now.getDate() + offset * 3);
+      // Spread events across this month
+      const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+      const monthOffset = Math.floor((offset * daysLeftInMonth) / 10);
+      date.setDate(now.getDate() + monthOffset);
       break;
     case 'next month':
-      date.setMonth(now.getMonth() + 1);
-      date.setDate(offset * 4 + 1);
+      // Spread events across next month
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const daysInNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate();
+      const nextMonthOffset = Math.floor((offset * daysInNextMonth) / 10);
+      date.setTime(nextMonthStart.getTime());
+      date.setDate(1 + nextMonthOffset);
       break;
     default:
+      // Default: spread across next 30 days
       date.setDate(now.getDate() + offset * 2);
   }
 
