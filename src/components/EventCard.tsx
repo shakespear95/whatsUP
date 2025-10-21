@@ -74,7 +74,14 @@ export function EventCard({
   const CategoryIcon = getCategoryIcon(category);
 
   const renderTicketInfo = () => {
-    if (!tickets) return null;
+    if (!tickets) {
+      // Show a minimal indicator when no ticket info available
+      return (
+        <span className="text-xs text-muted-foreground italic">
+          Click for details
+        </span>
+      );
+    }
     
     switch (tickets.type) {
       case 'free':

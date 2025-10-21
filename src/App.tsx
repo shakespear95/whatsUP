@@ -189,6 +189,14 @@ export default function App() {
         const mappedEvents = result.data.events.map((event: any) => {
           const ticketLink = event.ticket_link || event.ticketLink;
 
+          // Check if we have a valid ticket link
+          const hasValidTicketLink = ticketLink &&
+                                     ticketLink !== 'null' &&
+                                     ticketLink !== 'NULL' &&
+                                     ticketLink !== '' &&
+                                     ticketLink !== '#' &&
+                                     !ticketLink.includes('See website');
+
           return {
             ...event,
             image: event.image_url || event.image,
@@ -196,18 +204,14 @@ export default function App() {
             ticketLink,
             specialFeature: event.special_feature || event.specialFeature,
             // Convert ticketLink to tickets format for EventCard
-            tickets: ticketLink && ticketLink !== 'null' && ticketLink !== '' ? {
+            tickets: hasValidTicketLink ? {
               type: 'link' as const,
               value: ticketLink,
-              label: 'Tickets kaufen'
+              label: 'See website'
             } : (event.price === 'Free' || event.price === 'Kostenlos' || event.price?.toLowerCase().includes('free')) ? {
               type: 'free' as const,
-              label: 'Kostenlos'
-            } : {
-              type: 'website' as const,
-              value: ticketLink || '#',
-              label: 'Zur Website'
-            }
+              label: 'Free Entry'
+            } : undefined  // Don't render any button if no valid link
           };
         });
 
