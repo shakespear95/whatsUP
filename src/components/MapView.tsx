@@ -178,10 +178,14 @@ export function MapView({ events }: MapViewProps) {
       markersRef.current.push(marker);
     });
 
-    // Karte auf alle Events anpassen
-    if (events.length > 0) {
+    // Karte auf alle Events anpassen (nur wenn Marker vorhanden)
+    if (markersRef.current.length > 0) {
       const group = new L.featureGroup(markersRef.current);
       mapInstance.fitBounds(group.getBounds().pad(0.1));
+    } else if (events.length > 0) {
+      // Wenn keine Marker vorhanden, aber Events existieren, zeige Warnung
+      console.warn('⚠️ No events have valid coordinates for map display');
+      // Zentrierung auf Schweiz beibehalten (bereits beim Init gesetzt)
     }
   };
 
