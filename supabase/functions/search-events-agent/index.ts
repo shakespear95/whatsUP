@@ -385,6 +385,11 @@ async function searchRealEventsInParallel(searchData: SearchRequest, weather: an
       name: 'SerpAPI',
       promise: searchWithSerpAPI(searchData),
     });
+    // Also search Facebook events via SerpAPI
+    providers.push({
+      name: 'Facebook Events',
+      promise: searchFacebookEvents(searchData),
+    });
   }
 
   if (Deno.env.get('PERPLEXITY_API_KEY')) {
@@ -936,6 +941,65 @@ function processSerpResults(serpData: any, searchData: SearchRequest) {
 
   console.log(`📊 SerpAPI processed ${events.length} events`);
   return events;
+}
+
+// =====================================================
+// Facebook Events Search via SerpAPI
+// =====================================================
+async function searchFacebookEvents(searchData: SearchRequest) {
+  const SERP_API_KEY = Deno.env.get('SERP_API_KEY');
+
+  if (!SERP_API_KEY) {
+    console.log('⚠️ SERP_API_KEY not configured, skipping Facebook events');
+    return [];
+  }
+
+  try {
+    console.log('📘 Searching Facebook events via SerpAPI...');
+
+    // Create targeted Facebook events query
+    const query = `${searchData.activity_type} events in ${searchData.location}`;
+
+    const response = await fetch(
+      `https://serpapi.com/search.json?engine=facebook_events&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`SerpAPI Facebook error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const fbEvents = data.events_results || [];
+
+    console.log(`✅ Found ${fbEvents.length} Facebook events`);
+
+    // Transform to our event format
+    return fbEvents.map((event: any, index: number) => ({
+      title: cleanEventTitle(event.name || event.title || 'Facebook Event'),
+      description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
+      date: event.start_time || event.date || getDateInTimeframe(searchData.timeframe, index),
+      time: event.start_time ? new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : getRandomTime(),
+      location: event.location?.name || searchData.location,
+      venue: event.location?.name || extractVenue(event.name, searchData.location),
+      address: event.location?.address || `${searchData.location} - See Facebook`,
+      latitude: event.location?.latitude || null,
+      longitude: event.location?.longitude || null,
+      price: event.ticket_price || extractPrice(event.description) || 'See Facebook',
+      category: searchData.activity_type,
+      special_feature: '📘 Posted on Facebook',
+      organizer: event.organizer?.name || 'Event Organizer',
+      capacity: event.attending_count ? `${event.attending_count} attending` : 'See Facebook',
+      tags: [searchData.activity_type.toLowerCase(), 'facebook-event', 'real-event'],
+      ticket_link: event.link || event.url || null,
+      source: 'Facebook Events (SerpAPI)',
+      real_event: true,
+      image_url: event.thumbnail || event.image || getEventImage(searchData.activity_type),
+    }));
+
+  } catch (error) {
+    console.error('❌ Facebook events search error:', error);
+    return [];
+  }
 }
 
 // =====================================================
