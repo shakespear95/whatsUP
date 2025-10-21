@@ -65,7 +65,7 @@ export default function App() {
     dateTo: undefined,
     budget: {
       min: 0,
-      max: 200,
+      max: 300,
       onlyFree: false
     },
     keywords: '',

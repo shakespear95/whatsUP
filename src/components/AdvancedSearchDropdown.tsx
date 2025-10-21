@@ -377,7 +377,24 @@ export function AdvancedSearchDropdown({ filters, onFiltersChange, onClose, full
       },
       (error) => {
         console.error('Error getting location:', error);
-        alert('Could not determine location');
+        let errorMessage = 'Could not determine location. ';
+
+        if (error.code === 1) {
+          errorMessage += 'Please allow location access in your browser settings.';
+        } else if (error.code === 2) {
+          errorMessage += 'Location information is unavailable. Please try again.';
+        } else if (error.code === 3) {
+          errorMessage += 'Location request timed out. Please try again.';
+        } else {
+          errorMessage += 'Please try entering your location manually.';
+        }
+
+        alert(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
       }
     );
   };
@@ -654,7 +671,7 @@ export function AdvancedSearchDropdown({ filters, onFiltersChange, onClose, full
                 dateTo: undefined,
                 budget: {
                   min: 0,
-                  max: 200,
+                  max: 300,
                   onlyFree: false
                 },
                 keywords: '',
