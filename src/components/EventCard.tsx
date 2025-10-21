@@ -74,69 +74,8 @@ export function EventCard({
   const CategoryIcon = getCategoryIcon(category);
 
   const renderTicketInfo = () => {
-    if (!tickets) {
-      // Show a minimal indicator when no ticket info available
-      return (
-        <span className="text-xs text-muted-foreground italic">
-          Click for details
-        </span>
-      );
-    }
-    
-    switch (tickets.type) {
-      case 'free':
-        return (
-          <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50 dark:bg-green-950">
-            <span className="mr-1">🆓</span>
-            {t('event.free')}
-          </Badge>
-        );
-      case 'link':
-        return (
-          <Button
-            variant="default"
-            size="sm"
-            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (tickets.value) window.open(tickets.value, '_blank');
-            }}
-          >
-            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-            {tickets.label || t('event.tickets')}
-          </Button>
-        );
-      case 'website':
-        return (
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-blue-600 hover:text-blue-800 font-medium"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (tickets.value) window.open(tickets.value, '_blank');
-            }}
-          >
-            <Globe className="w-3 h-3 mr-1" />
-            {tickets.label || t('event.website')}
-          </Button>
-        );
-      case 'phone':
-        return (
-          <Button 
-            variant="link" 
-            size="sm" 
-            className="h-auto p-0 text-blue-600 hover:text-blue-800 font-medium"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (tickets.value) window.location.href = `tel:${tickets.value}`;
-            }}
-          >
-            <Phone className="w-3 h-3 mr-1" />
-            {tickets.value}
-          </Button>
-        );
-    }
+    // Don't render any ticket buttons - removed to clean up card layout
+    return null;
   };
 
   const eventData = {
