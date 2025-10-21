@@ -265,9 +265,9 @@ export async function searchEvents(searchParams: {
       console.log('✅ Valid session found, user:', session.user?.email);
     }
 
-    // Create an AbortController with 90 second timeout (increased for LLM processing)
+    // Create an AbortController with 5 minute timeout (for thorough search mode)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes (300 seconds)
 
     const response = await fetch(
       `${supabaseUrl}/functions/v1/search-events`,
