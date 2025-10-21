@@ -199,22 +199,58 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
 
   const handleLocationDetection = async () => {
     if (!navigator.geolocation) {
-      alert('Geolocation wird von diesem Browser nicht unterstützt');
+      alert('Geolocation is not supported by this browser');
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        setFilters(prev => ({ 
-          ...prev,
-          location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-          useCurrentLocation: true 
-        }));
+
+        // Reverse geocode to get actual place name
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'WhatsUP-Event-Finder/1.0',
+              },
+            }
+          );
+
+          const data = await response.json();
+
+          // Get city, town, or village name
+          const placeName = data.address?.city ||
+                           data.address?.town ||
+                           data.address?.village ||
+                           data.address?.county ||
+                           data.address?.state ||
+                           `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+          const country = data.address?.country || '';
+          const locationName = country ? `${placeName}, ${country}` : placeName;
+
+          console.log('📍 Detected location:', locationName);
+
+          setFilters(prev => ({
+            ...prev,
+            location: locationName,
+            useCurrentLocation: true
+          }));
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          // Fallback to coordinates if reverse geocoding fails
+          setFilters(prev => ({
+            ...prev,
+            location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            useCurrentLocation: true
+          }));
+        }
       },
       (error) => {
         console.error('Error getting location:', error);
-        alert('Standort konnte nicht ermittelt werden');
+        alert('Could not determine location');
       }
     );
   };
