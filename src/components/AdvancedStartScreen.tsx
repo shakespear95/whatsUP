@@ -24,22 +24,22 @@ interface AdvancedStartScreenProps {
 
 // Category data structure - ERWEITERT mit neuen UNIQUE Kategorien
 const categoryData = {
-  'konzerte': {
+  'Concert': {
     label: 'Concerts & Party',
     color: '#8B5CF6',
-    subcategories: ['pop-rock', 'elektro-dance', 'jazz-blues', 'klassik-oper', 'hip-hop-rap', 'schlager-volksmusik', 'metal-punk', 'world-music', 'cover-bands', 'party-clubbing', 'festivals']
+    subcategories: ['pop-rock', 'elektro-dance', 'jazz-blues', 'Classic Opera', 'hip-hop-rap', 'Schlager-Folk Music', 'metal-punk', 'world-music', 'cover-bands', 'party-clubbing', 'festivals']
   },
-  'buehne': {
+  'stage': {
     label: 'Stage & Theater',
     color: '#EF4444',
     subcategories: ['theater', 'musical', 'comedy-cabaret', 'dance-ballet', 'variety-circus', 'opera', 'literature-reading', 'poetry-slam']
   },
-  'kunst': {
+  'Art': {
     label: 'Art & Museums',
     color: '#3B82F6',
     subcategories: ['exhibition', 'museum', 'gallery', 'vernissage', 'handicrafts', 'photography', 'film-cinema', 'architecture']
   },
-  'familie': {
+  'Familiy': {
     label: 'Family & Kids',
     color: '#10B981',
     subcategories: ['children-theater', 'kids-circus', 'kids-workshops', 'fairy-tales', 'arts-crafts', 'playground-events', 'family-concerts', 'zoo-animals']
@@ -274,13 +274,13 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
   };
 
   const handleCategoryRequest = () => {
-    // In einer echten App würde hier ein API-Call gemacht
-    console.log('Kategorie-Antrag:', categoryRequest);
-    
-    // Erfolgsmeldung anzeigen
-    alert(`Vielen Dank! Ihr Antrag für die Kategorie "${categoryRequest.name}" wurde eingereicht. Wir werden ihn prüfen und uns bei Ihnen melden.`);
-    
-    // Form zurücksetzen
+    // In a real app, an API call would be made here
+    console.log('Category Request:', categoryRequest);
+
+    // Show success message
+    alert(`Thank you! Your request for the category "${categoryRequest.name}" has been submitted. We will review it and get back to you.`);
+
+    // Reset form
     setCategoryRequest({
       name: '',
       description: '',
@@ -346,19 +346,19 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
   };
 
   const getBudgetLabel = () => {
-    if (filters.budget.onlyFree) return 'Gratis';
-    if (filters.budget.max >= 300) return `Bis CHF ${filters.budget.max}+`;
-    return `Bis CHF ${filters.budget.max}`;
+    if (filters.budget.onlyFree) return 'Free';
+    if (filters.budget.max >= 300) return `Up to CHF ${filters.budget.max}+`;
+    return `Up to CHF ${filters.budget.max}`;
   };
 
   const getSelectedCategoriesText = () => {
     const count = filters.categories.length;
-    if (count === 0) return 'Alle Kategorien';
+    if (count === 0) return 'All Categories';
     if (count === 1) {
       const categoryKey = filters.categories[0] as keyof typeof categoryData;
-      return categoryData[categoryKey]?.label || 'Kategorie';
+      return categoryData[categoryKey]?.label || 'Category';
     }
-    return `${count} ausgewählt`;
+    return `${count} selected`;
   };
 
   const getSearchModeDescription = () => {
@@ -598,7 +598,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           className="w-full"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Neue Kategorie beantragen
+                          Request New Category
                         </Button>
                       </div>
 
@@ -772,7 +772,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                 >
                   <span>
                     {filters.budget.onlyFree
-                      ? "Gratis"
+                      ? "Free"
                       : filters.budget.max !== 300
                         ? `CHF ${filters.budget.max}`
                         : "Choose budget"
@@ -798,7 +798,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                       })
                     }
                   />
-                  <span className="text-sm">Nur Gratis-Events</span>
+                  <span className="text-sm">Free Events Only</span>
                 </div>
                 {!filters.budget.onlyFree && (
                   <div className="space-y-2">
@@ -902,9 +902,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                           </div>
                         </div>
 
-                        {/* Verpflegung */}
+                        {/* Catering */}
                         <div className="space-y-2">
-                          <h4 className="font-medium text-sm">🍽️ Verpflegung</h4>
+                          <h4 className="font-medium text-sm">🍽️ Catering</h4>
                           <div className="flex flex-wrap gap-2">
                             {quickFiltersData.filter(f => f.category === 'catering').map((filter) => (
                               <Button
@@ -952,9 +952,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                         
                         {showExtendedFilters && (
                           <div className="space-y-4 mt-4">
-                            {/* Barrierefreiheit */}
+                            {/* Accessibility */}
                             <div className="space-y-2">
-                              <h4 className="font-medium text-sm">♿ Barrierefreiheit</h4>
+                              <h4 className="font-medium text-sm">♿ Accessibility</h4>
                               <div className="flex flex-wrap gap-2">
                                 {quickFiltersData.filter(f => f.category === 'accessibility').map((filter) => (
                                   <Button
@@ -1096,15 +1096,15 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
       <Dialog open={showCategoryRequest} onOpenChange={setShowCategoryRequest}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Neue Kategorie beantragen</DialogTitle>
+            <DialogTitle>Request New Category</DialogTitle>
             <DialogDescription>
-              Schlagen Sie eine neue Event-Kategorie für WhatsUP vor
+              Suggest a new event category for WhatsUP
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Kategorie-Name *</label>
+              <label className="text-sm font-medium">Category Name *</label>
               <Input
                 placeholder="z.B. Wellness & Entspannung"
                 value={categoryRequest.name}
@@ -1114,9 +1114,9 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
 
             <div>
-              <label className="text-sm font-medium">Beschreibung *</label>
+              <label className="text-sm font-medium">Description *</label>
               <Textarea
-                placeholder="Beschreiben Sie die vorgeschlagene Kategorie..."
+                placeholder="Describe the suggested category..."
                 value={categoryRequest.description}
                 onChange={(e) => setCategoryRequest(prev => ({ ...prev, description: e.target.value }))}
                 className="mt-1"
@@ -1127,7 +1127,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             <div>
               <label className="text-sm font-medium">Reason *</label>
               <Textarea
-                placeholder="Warum braucht WhatsUP diese Kategorie?"
+                placeholder="Why does WhatsUP need this category?"
                 value={categoryRequest.reason}
                 onChange={(e) => setCategoryRequest(prev => ({ ...prev, reason: e.target.value }))}
                 className="mt-1"
@@ -1156,7 +1156,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Für Rückfragen zur Kategorie-Anfrage
+                For follow-up questions about the category request
               </p>
             </div>
           </div>
@@ -1167,7 +1167,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
               onClick={() => setShowCategoryRequest(false)}
               className="flex-1"
             >
-              Abbrechen
+              Cancel
             </Button>
             <Button 
               onClick={handleCategoryRequest}
@@ -1203,26 +1203,26 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             </div>
 
             <div>
-              <label className="text-sm font-medium">Filter-Kategorie *</label>
+              <label className="text-sm font-medium">Filter Category *</label>
               <select
                 value={filterRequest.category}
                 onChange={(e) => setFilterRequest(prev => ({ ...prev, category: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background"
               >
-                <option value="">Kategorie wählen...</option>
-                <option value="accessibility">🔧 Barrierefreiheit</option>
-                <option value="age">👥 Altersgruppen</option>
-                <option value="location">📍 Location-Features</option>
-                <option value="catering">🍽️ Verpflegung</option>
+                <option value="">Choose category...</option>
+                <option value="accessibility">🔧 Accessibility</option>
+                <option value="age">👥 Age Groups</option>
+                <option value="location">📍 Location Features</option>
+                <option value="catering">🍽️ Catering</option>
                 <option value="special">✨ Special Interest</option>
-                <option value="new">📂 Neue Kategorie</option>
+                <option value="new">📂 New Category</option>
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Beschreibung *</label>
+              <label className="text-sm font-medium">Description *</label>
               <Textarea
-                placeholder="Beschreiben Sie den vorgeschlagenen Filter..."
+                placeholder="Describe the suggested filter..."
                 value={filterRequest.description}
                 onChange={(e) => setFilterRequest(prev => ({ ...prev, description: e.target.value }))}
                 className="mt-1"
@@ -1233,7 +1233,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
             <div>
               <label className="text-sm font-medium">Reason *</label>
               <Textarea
-                placeholder="Warum braucht WhatsUP diesen Filter?"
+                placeholder="Why does WhatsUP need this filter?"
                 value={filterRequest.reason}
                 onChange={(e) => setFilterRequest(prev => ({ ...prev, reason: e.target.value }))}
                 className="mt-1"
@@ -1273,7 +1273,7 @@ export function AdvancedStartScreen({ onStartSearch, onSettingsClick, onShowResu
               onClick={() => setShowFilterRequest(false)}
               className="flex-1"
             >
-              Abbrechen
+              Cancel
             </Button>
             <Button 
               onClick={handleFilterRequest}
