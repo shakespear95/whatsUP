@@ -668,30 +668,28 @@ async function enhanceEventsWithClaudeAgent(events: any[], searchData: SearchReq
 
   console.log(`🤖 Claude Agent enhancing ${events.length} events...`);
 
-  const prompt = `You are an expert event curator. Enhance these real events from web search.
+  const prompt = `Enhance event descriptions. Return ONLY valid JSON array.
 
-CRITICAL: Return ONLY valid JSON array. No markdown, no code blocks, no explanations.
-
-Events to enhance:
+Input events:
 ${JSON.stringify(events, null, 2)}
 
-Tasks:
-1. Enhance descriptions (2-3 engaging sentences)
-2. Add special_feature (what's unique about this event)
-3. Keep ALL original fields unchanged (title, date, location, ticket_link, source, etc.)
-4. Weather context: ${weather.condition}, ${weather.temperature}°C
+Instructions:
+1. Improve description field (2-3 sentences, engaging)
+2. Add special_feature field (unique aspect)
+3. Keep all other fields EXACTLY as-is
+4. Use simple language, avoid special characters
+5. Weather: ${weather.condition}, ${weather.temperature}°C
 
-IMPORTANT:
-- Return ONLY the JSON array starting with [ and ending with ]
-- No ```json``` code blocks
-- No explanatory text before or after
-- All strings must use valid JSON escaping
-- No trailing commas
+CRITICAL RULES:
+- Return ONLY JSON array: [{...},{...}]
+- NO markdown, NO code blocks, NO text outside array
+- Use double quotes for all strings
+- Escape quotes inside strings with backslash
+- NO trailing commas
+- NO newlines inside string values (use spaces)
+- NO apostrophes or special Unicode quotes
 
-Example of CORRECT format:
-[{"title":"Event 1","description":"Enhanced text",...},{"title":"Event 2",...}]
-
-Now return the enhanced events:`;
+Return the JSON array now:`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -747,16 +745,48 @@ Now return the enhanced events:`;
       const arrayMatch = content.match(/\[([\s\S]*)\]/);
       if (arrayMatch) {
         try {
-          // Clean up common JSON issues
+          // Aggressive JSON cleanup
           let jsonString = '[' + arrayMatch[1] + ']';
-          // Remove trailing commas before closing brackets
+
+          // Remove trailing commas before closing brackets/braces
           jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-          // Fix unescaped quotes in strings (basic)
+
+          // Fix common issues with quotes in descriptions
+          // Replace smart quotes with regular quotes
+          jsonString = jsonString.replace(/[\u201C\u201D]/g, '"');
+          jsonString = jsonString.replace(/[\u2018\u2019]/g, "'");
+
+          // Remove any control characters that break JSON
+          jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
+
+          // Try parsing
           enhancedEvents = JSON.parse(jsonString);
           console.log('✅ Extracted JSON from array match');
         } catch (e) {
           console.log('⚠️ Array match JSON invalid:', e.message);
-          console.log('📄 Attempted JSON (first 300 chars):', jsonString?.substring(0, 300));
+          console.log('📄 Attempted JSON (first 500 chars):', jsonString?.substring(0, 500));
+
+          // Strategy 2b: Try removing the problematic event and parsing the rest
+          try {
+            // Find the position of the error and try to recover
+            const errorMatch = e.message.match(/position (\d+)/);
+            if (errorMatch) {
+              const errorPos = parseInt(errorMatch[1]);
+              console.log(`🔧 Attempting recovery from position ${errorPos}...`);
+
+              // Try to find the last complete event before the error
+              const beforeError = jsonString.substring(0, errorPos);
+              const lastCompleteEvent = beforeError.lastIndexOf('},');
+
+              if (lastCompleteEvent > 0) {
+                const recoveredJson = jsonString.substring(0, lastCompleteEvent + 1) + ']';
+                enhancedEvents = JSON.parse(recoveredJson);
+                console.log(`✅ Recovered ${enhancedEvents.length} events (skipped problematic event)`);
+              }
+            }
+          } catch (recoveryError) {
+            console.log('⚠️ Recovery attempt failed:', recoveryError.message);
+          }
         }
       }
     }
