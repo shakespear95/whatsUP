@@ -270,7 +270,7 @@ export async function searchEvents(searchParams: {
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes (300 seconds)
 
     const response = await fetch(
-      `${supabaseUrl}/functions/v1/search-events`,
+      `${supabaseUrl}/functions/v1/search-events-agent`,
       {
         method: 'POST',
         headers: {
