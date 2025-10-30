@@ -1,6 +1,6 @@
 // =====================================================
 // Supabase Edge Function: search-events
-// Handles event search with caching and LLM integration
+// AI Agent-based Event Search with Claude Orchestration
 // =====================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -119,36 +119,39 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Cache miss - Search with LLMs
-    console.log('⚠️ Cache miss - Calling LLM APIs...');
+    // =====================================================
+    // AGENT-BASED SEARCH WITH CLAUDE (NEW IMPLEMENTATION)
+    // =====================================================
+    console.log('⚠️ Cache miss - Initiating AI Agent search with Claude...');
 
-    const newEvents = await searchWithLLMs(searchData);
+    // Execute agent-based search with Claude orchestration
+    const agentEvents = await executeClaudeAgentSearch(searchData);
 
     // Step 3: Save new events to database
-    if (newEvents.length > 0) {
-      await saveEventsToDatabase(supabaseClient, newEvents);
+    if (agentEvents.length > 0) {
+      await saveEventsToDatabase(supabaseClient, agentEvents);
     }
 
     // Step 4: Get user's saved events if authenticated
     let userSavedEventIds: string[] = [];
-    if (user && newEvents.length > 0) {
-      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, newEvents.map(e => e.id));
+    if (user && agentEvents.length > 0) {
+      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, agentEvents.map(e => e.id));
     }
 
     // Step 5: Save search history if authenticated
     if (user) {
-      await saveSearchHistory(supabaseClient, user.id, searchData, newEvents.length, false);
+      await saveSearchHistory(supabaseClient, user.id, searchData, agentEvents.length, false);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          events: newEvents,
+          events: agentEvents,
           userSavedEventIds,
-          totalResults: newEvents.length,
+          totalResults: agentEvents.length,
           cached: false,
-          source: 'LLM Search',
+          source: 'AI Agent Search',
         },
       }),
       {
@@ -173,6 +176,590 @@ serve(async (req) => {
 });
 
 // =====================================================
+// CLAUDE AI AGENT ORCHESTRATION
+// =====================================================
+
+/**
+ * Main agent execution function using Claude with tool-use capabilities
+ * Claude acts as the orchestrator, deciding which tools to use and when
+ */
+async function executeClaudeAgentSearch(searchData: SearchRequest): Promise<any[]> {
+  console.log('🤖 Initializing Claude AI Agent with tool-use capabilities...');
+
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is required for agent functionality');
+    throw new Error('Agent configuration error: Missing Anthropic API key');
+  }
+
+  // Define the tools available to Claude
+  const tools = [
+    {
+      name: "perplexity_search",
+      description: "Search for real-time event information using Perplexity's deep research capabilities. Best for finding current, accurate event data with citations.",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query for finding events"
+          },
+          model: {
+            type: "string",
+            enum: ["sonar", "sonar-deep-research", "sonar-pro"],
+            description: "Perplexity model to use",
+            default: "sonar-deep-research"
+          }
+        },
+        required: ["query"]
+      }
+    },
+    {
+      name: "google_serp_search",
+      description: "Search Google for event information using SerpAPI. Good for finding event websites, tickets, and general information.",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query for Google"
+          },
+          location: {
+            type: "string",
+            description: "Location for localized search results"
+          }
+        },
+        required: ["query"]
+      }
+    },
+    {
+      name: "firecrawl_scrape",
+      description: "Scrape detailed information from event websites using Firecrawl. Use when you have specific URLs to extract structured data from.",
+      input_schema: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "The URL to scrape"
+          },
+          formats: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["markdown", "html", "rawHtml", "content", "links", "screenshot"]
+            },
+            description: "Formats to return the scraped data in",
+            default: ["markdown"]
+          }
+        },
+        required: ["url"]
+      }
+    },
+    {
+      name: "weather_check",
+      description: "Get current weather conditions for event planning. Helps determine if indoor/outdoor events are suitable.",
+      input_schema: {
+        type: "object",
+        properties: {
+          location: {
+            type: "string",
+            description: "Location to check weather for"
+          }
+        },
+        required: ["location"]
+      }
+    }
+  ];
+
+  // System prompt that defines Claude's role and behavior
+  const systemPrompt = `You are an expert Local Event Discovery Agent with access to powerful search and data extraction tools. Your mission is to find the best, most relevant events based on user criteria.
+
+## Your Capabilities:
+- You can use multiple tools in sequence to gather comprehensive information
+- You think strategically about which tools to use and in what order
+- You can validate and cross-reference information from multiple sources
+- You focus on finding REAL, CURRENT events (not generating fictional ones)
+
+## Your Process:
+1. First, check weather conditions if relevant for outdoor events
+2. Use Perplexity for deep research on current events in the area
+3. Use Google SERP for additional event discoveries and ticket links
+4. Use Firecrawl to extract detailed information from promising event pages
+5. Synthesize all findings into a comprehensive list
+
+## Important Guidelines:
+- Prioritize accuracy and real events over quantity
+- Include diverse event types matching the user's interests
+- Provide practical details (dates, times, prices, venues)
+- Consider weather conditions for outdoor events
+- Focus on events within the specified timeframe
+- Return structured data that can be parsed and stored
+
+## Output Format:
+Return events as a JSON array with consistent structure:
+- title: Event name
+- description: Brief compelling description (2-3 sentences)
+- date: YYYY-MM-DD format
+- time: HH:MM format
+- location: City/area
+- venue: Specific venue name
+- address: Full address if available
+- price: Price or price range
+- category: Event category
+- special_feature: Unique aspects or highlights
+- ticket_link: URL for tickets/registration if available
+- source: Where the information was found
+- weather_suitable: boolean for outdoor events`;
+
+  // User prompt with search parameters
+  const userPrompt = `Find the best ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}.
+${searchData.keywords ? `Additional keywords: ${searchData.keywords}` : ''}
+${searchData.radius ? `Within ${searchData.radius}km radius` : ''}
+${searchData.budget ? `Budget: ${searchData.budget}` : ''}
+
+Use your available tools strategically to find real, current events. Start with weather check if relevant, then use deep search tools to find comprehensive event information. Return 15-20 high-quality event recommendations.`;
+
+  try {
+    // Call Claude API with tool-use capability
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'tools-2024-04-04'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 8192,
+        temperature: 0.3,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        tools: tools,
+        tool_choice: { type: "auto" }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('❌ Claude API error:', error);
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const claudeResponse = await response.json();
+    console.log('✅ Claude initial response received');
+
+    // Process Claude's response and handle tool calls
+    const events = await processClaudeAgentResponse(claudeResponse, searchData);
+
+    return events;
+
+  } catch (error) {
+    console.error('❌ Agent execution failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process Claude's response and execute tool calls iteratively
+ * This implements the agent loop where Claude can make multiple tool calls
+ */
+async function processClaudeAgentResponse(
+  claudeResponse: any,
+  searchData: SearchRequest
+): Promise<any[]> {
+  console.log('🔄 Processing Claude agent response...');
+
+  const messages = [
+    {
+      role: 'user',
+      content: `Find the best ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}.`
+    }
+  ];
+
+  let assistantMessage = claudeResponse;
+  let toolCallCount = 0;
+  const maxToolCalls = 10;
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+  // Agent loop - continue while Claude wants to use tools
+  while (toolCallCount < maxToolCalls) {
+    messages.push({
+      role: 'assistant',
+      content: assistantMessage.content
+    });
+
+    // Check if Claude wants to use tools
+    if (assistantMessage.stop_reason === 'tool_use') {
+      console.log(`🛠️ Claude requesting tool use (iteration ${toolCallCount + 1})`);
+
+      const toolUses = assistantMessage.content.filter((block: any) => block.type === 'tool_use');
+      const toolResults = [];
+
+      // Execute each tool call with timeout
+      for (const toolUse of toolUses) {
+        console.log(`📞 Calling tool: ${toolUse.name}`);
+
+        try {
+          // Add 30 second timeout for tool execution
+          const toolResult = await Promise.race([
+            executeToolCall(toolUse.name, toolUse.input, searchData),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Tool execution timeout')), 30000)
+            )
+          ]);
+
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(toolResult)
+          });
+        } catch (error) {
+          console.error(`❌ Tool ${toolUse.name} failed:`, error);
+          // Return error to Claude so it can adapt
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify({ error: error.message }),
+            is_error: true
+          });
+        }
+      }
+
+      // Add tool results to messages
+      messages.push({
+        role: 'user',
+        content: toolResults
+      });
+
+      // Get Claude's next response
+      const nextResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'tools-2024-04-04'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-sonnet-20240229',
+          max_tokens: 8192,
+          temperature: 0.3,
+          system: `You are an expert Local Event Discovery Agent. Based on the tool results, provide a final list of 15-20 real events in JSON array format.`,
+          messages: messages,
+          tools: []
+        })
+      });
+
+      if (!nextResponse.ok) {
+        console.error('❌ Claude continuation failed');
+        break;
+      }
+
+      assistantMessage = await nextResponse.json();
+      toolCallCount++;
+
+    } else {
+      // Claude is done with tool use, extract final response
+      console.log('✅ Claude completed tool usage, extracting events...');
+      break;
+    }
+  }
+
+  // Extract events from Claude's final response
+  const events = extractEventsFromClaudeResponse(assistantMessage, searchData);
+  return events;
+}
+
+/**
+ * Execute individual tool calls based on Claude's requests
+ * This is where we implement the actual tool functionality
+ */
+async function executeToolCall(
+  toolName: string,
+  toolInput: any,
+  searchData: SearchRequest
+): Promise<any> {
+  console.log(`🔧 Executing tool: ${toolName} with input:`, toolInput);
+
+  switch (toolName) {
+    case 'perplexity_search':
+      return await executePerplexitySearch(toolInput, searchData);
+
+    case 'google_serp_search':
+      return await executeGoogleSerpSearch(toolInput, searchData);
+
+    case 'firecrawl_scrape':
+      return await executeFirecrawlScrape(toolInput);
+
+    case 'weather_check':
+      return await executeWeatherCheck(toolInput);
+
+    default:
+      console.warn(`⚠️ Unknown tool requested: ${toolName}`);
+      return { error: `Unknown tool: ${toolName}` };
+  }
+}
+
+/**
+ * Tool Implementation: Perplexity Search
+ * Uses Perplexity API for deep research on events
+ */
+async function executePerplexitySearch(input: any, searchData: SearchRequest): Promise<any> {
+  console.log('🔍 Executing Perplexity search...');
+
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+
+  if (!PERPLEXITY_API_KEY) {
+    return { error: 'Perplexity API key not configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: input.model || 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a real event finder. Search for actual, current events and return structured data.'
+          },
+          {
+            role: 'user',
+            content: input.query
+          }
+        ],
+        max_tokens: 5000,
+        temperature: 0.2,
+        return_citations: true,
+        search_recency_filter: 'week'
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Perplexity error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      content: data.choices[0].message.content,
+      citations: data.citations || []
+    };
+
+  } catch (error) {
+    console.error('❌ Perplexity search failed:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Tool Implementation: Google SERP Search
+ * Uses SerpAPI for Google search results
+ */
+async function executeGoogleSerpSearch(input: any, searchData: SearchRequest): Promise<any> {
+  console.log('🔍 Executing Google SERP search...');
+
+  const SERP_API_KEY = Deno.env.get('SERP_API_KEY');
+
+  if (!SERP_API_KEY) {
+    return { error: 'SERP API key not configured' };
+  }
+
+  try {
+    const response = await fetch(
+      `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(input.query)}&location=${encodeURIComponent(input.location || searchData.location)}&api_key=${SERP_API_KEY}&num=20`
+    );
+
+    if (!response.ok) {
+      throw new Error(`SERP API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Extract relevant results
+    const results = (data.organic_results || []).map((result: any) => ({
+      title: result.title,
+      link: result.link,
+      snippet: result.snippet,
+      date: result.date
+    }));
+
+    return {
+      success: true,
+      results: results,
+      total_results: data.search_information?.total_results
+    };
+
+  } catch (error) {
+    console.error('❌ Google SERP search failed:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Tool Implementation: Firecrawl Web Scraping
+ * Uses Firecrawl API to extract structured data from event pages
+ */
+async function executeFirecrawlScrape(input: any): Promise<any> {
+  console.log('🔍 Executing Firecrawl scrape...');
+
+  const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+
+  if (!FIRECRAWL_API_KEY) {
+    return { error: 'Firecrawl API key not configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+      },
+      body: JSON.stringify({
+        url: input.url,
+        formats: input.formats || ['markdown'],
+        onlyMainContent: true,
+        includeTags: ['h1', 'h2', 'h3', 'p', 'time', 'address'],
+        waitFor: 2000
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Firecrawl error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      content: data.data,
+      metadata: data.metadata || {}
+    };
+
+  } catch (error) {
+    console.error('❌ Firecrawl scrape failed:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Tool Implementation: Weather Check
+ * Gets current weather conditions for event planning
+ */
+async function executeWeatherCheck(input: any): Promise<any> {
+  console.log('🌤️ Checking weather conditions...');
+
+  const WEATHER_API_KEY = Deno.env.get('OPENWEATHER_API_KEY');
+
+  if (!WEATHER_API_KEY) {
+    return {
+      condition: 'unknown',
+      temperature: 20,
+      description: 'Weather data unavailable',
+      indoor_recommended: false
+    };
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(input.location)}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Weather API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const badWeather = ['rain', 'thunderstorm', 'snow', 'drizzle'];
+    const condition = data.weather[0].main.toLowerCase();
+
+    return {
+      success: true,
+      condition: condition,
+      temperature: Math.round(data.main.temp),
+      description: data.weather[0].description,
+      indoor_recommended: badWeather.includes(condition),
+      humidity: data.main.humidity,
+      wind_speed: data.wind.speed
+    };
+
+  } catch (error) {
+    console.error('❌ Weather check failed:', error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * Extract structured event data from Claude's final response
+ * Parses Claude's output and formats it for storage
+ */
+function extractEventsFromClaudeResponse(claudeResponse: any, searchData: SearchRequest): any[] {
+  console.log('📝 Extracting events from Claude response...');
+
+  try {
+    // Get the text content from Claude's response
+    let content = '';
+    if (Array.isArray(claudeResponse.content)) {
+      content = claudeResponse.content
+        .filter((block: any) => block.type === 'text')
+        .map((block: any) => block.text)
+        .join('\n');
+    } else if (typeof claudeResponse.content === 'string') {
+      content = claudeResponse.content;
+    }
+
+    // Try to extract JSON array from the content
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.warn('⚠️ No JSON array found in Claude response');
+      return [];
+    }
+
+    const events = JSON.parse(jsonMatch[0]);
+
+    // Ensure all events have required fields and proper formatting
+    return events.map((event: any, index: number) => ({
+      id: generateEventId(event, index),
+      title: event.title || `${searchData.activity_type} Event`,
+      description: event.description || '',
+      date: formatDate(event.date) || getDateInTimeframe(searchData.timeframe, index),
+      time: event.time || '19:00',
+      location: event.location || searchData.location,
+      venue: event.venue || 'TBA',
+      address: event.address || searchData.location,
+      price: event.price || 'Check website',
+      category: searchData.activity_type,
+      special_feature: event.special_feature || '',
+      organizer: event.organizer || 'Event Organizer',
+      capacity: event.capacity || 'Unlimited',
+      tags: event.tags || [searchData.activity_type.toLowerCase()],
+      ticket_link: event.ticket_link || event.url || null,
+      source: event.source || 'AI Agent Search',
+      real_event: true,
+      image_url: event.image_url || getEventImage(searchData.activity_type),
+      weather_suitable: event.weather_suitable !== undefined ? event.weather_suitable : true
+    }));
+
+  } catch (error) {
+    console.error('❌ Failed to extract events:', error);
+    return [];
+  }
+}
+
+// =====================================================
 // Helper Functions
 // =====================================================
 
@@ -187,7 +774,7 @@ async function checkEventCache(supabaseClient: any, searchData: SearchRequest) {
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: true })
-    .limit(30); // Increased cache limit to support more results
+    .limit(30);
 
   if (error) {
     console.error('Cache check error:', error);
@@ -239,7 +826,6 @@ async function saveSearchHistory(
 }
 
 async function saveEventsToDatabase(supabaseClient: any, events: any[]) {
-  // Insert events (ignore duplicates due to unique constraint)
   const { error } = await supabaseClient.from('events').insert(events).select();
 
   if (error && !error.message.includes('duplicate key')) {
@@ -247,623 +833,6 @@ async function saveEventsToDatabase(supabaseClient: any, events: any[]) {
   } else {
     console.log(`✅ Saved ${events.length} events to database`);
   }
-}
-
-async function searchWithLLMs(searchData: SearchRequest) {
-  console.log('🤖 Starting LAYERED intelligent search...');
-  console.log('🔑 API Keys Status:', {
-    perplexity: Deno.env.get('PERPLEXITY_API_KEY') ? '✅ Available' : '❌ Missing',
-    openai: Deno.env.get('OPENAI_API_KEY') ? '✅ Available' : '❌ Missing',
-    gemini: Deno.env.get('GOOGLE_AI_API_KEY') ? '✅ Available' : '❌ Missing',
-    serp: Deno.env.get('SERP_API_KEY') ? '✅ Available' : '❌ Missing',
-  });
-
-  // LAYER 1: Get Weather Data (for context)
-  const weather = await getWeatherData(searchData.location);
-  console.log(`🌤️ Weather: ${weather.condition}, ${weather.temperature}°C - ${weather.description}`);
-
-  // LAYER 2: Deep Search with Real Event APIs in parallel
-  console.log('🔍 LAYER 2: Calling searchRealEventsInParallel...');
-  const realEvents = await searchRealEventsInParallel(searchData, weather);
-  console.log(`📊 LAYER 2 Complete: Got ${realEvents.length} real events`);
-
-  if (realEvents.length > 0) {
-    console.log(`✅ Found ${realEvents.length} real events, enhancing with AI + weather context...`);
-    console.log('🔍 LAYER 3: Calling enhanceEventsWithAI...');
-
-    // LAYER 3: Enhance real events with AI (better descriptions, weather-aware filtering)
-    const enhancedEvents = await enhanceEventsWithAI(realEvents, searchData, weather);
-    console.log(`📊 LAYER 3 Complete: Returning ${enhancedEvents.length} enhanced events`);
-    return enhancedEvents;
-  }
-
-  console.log('⚠️ No real events found, generating with AI + weather context');
-  console.log('🔍 FALLBACK: Calling generateEventsWithAI...');
-
-  // Fallback: Generate realistic events with AI + weather
-  const generatedEvents = await generateEventsWithAI(searchData, weather);
-  console.log(`📊 FALLBACK Complete: Generated ${generatedEvents.length} events`);
-  return generatedEvents;
-}
-
-// =====================================================
-// Weather API Integration
-// =====================================================
-
-async function getWeatherData(location: string) {
-  const WEATHER_API_KEY = Deno.env.get('OPENWEATHER_API_KEY');
-
-  if (!WEATHER_API_KEY) {
-    console.log('⚠️ No weather API key, skipping weather data');
-    return {
-      condition: 'unknown',
-      temperature: 20,
-      description: 'Weather data unavailable',
-      indoor_recommended: false,
-    };
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${WEATHER_API_KEY}&units=metric`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Weather API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    const condition = data.weather[0].main.toLowerCase(); // rain, clear, clouds, etc.
-    const temperature = Math.round(data.main.temp);
-    const description = data.weather[0].description;
-
-    // Determine if indoor events are recommended
-    const badWeather = ['rain', 'thunderstorm', 'snow', 'drizzle'];
-    const indoor_recommended = badWeather.includes(condition);
-
-    if (indoor_recommended) {
-      console.log(`⚠️ Bad weather detected (${condition}) - Will prioritize INDOOR events!`);
-    }
-
-    return {
-      condition,
-      temperature,
-      description,
-      indoor_recommended,
-    };
-  } catch (error) {
-    console.error('Weather API error:', error);
-    return {
-      condition: 'unknown',
-      temperature: 20,
-      description: 'Weather data unavailable',
-      indoor_recommended: false,
-    };
-  }
-}
-
-async function searchRealEventsInParallel(searchData: SearchRequest, weather: any) {
-  console.log('🔍 Searching for real events with Perplexity & SerpAPI in parallel (weather-aware)...');
-
-  const providers: { name: string; promise: Promise<any[]> }[] = [];
-
-  // Add SerpAPI search (enhanced with hidden gems)
-  if (Deno.env.get('SERP_API_KEY')) {
-    providers.push({
-      name: 'SerpAPI',
-      promise: searchWithSerpAPI(searchData, weather),
-    });
-  }
-
-  // Add Perplexity search (weather-aware)
-  if (Deno.env.get('PERPLEXITY_API_KEY')) {
-    providers.push({
-      name: 'Perplexity',
-      promise: searchWithPerplexity(searchData, weather),
-    });
-  }
-
-  if (providers.length === 0) {
-    console.log('❌ No real event search APIs configured');
-    return [];
-  }
-
-  console.log(`🚀 Running ${providers.length} search APIs in parallel...`);
-
-  // Execute all searches in parallel
-  console.log(`⏳ Waiting for ${providers.length} API providers to respond...`);
-  const results = await Promise.allSettled(providers.map(p => p.promise));
-  const allEvents: any[] = [];
-
-  results.forEach((result, index) => {
-    const providerName = providers[index].name;
-
-    if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
-      console.log(`✅ ${providerName} found ${result.value.length} events`);
-      allEvents.push(...result.value);
-    } else if (result.status === 'rejected') {
-      console.error(`❌ ${providerName} FAILED with error:`, result.reason);
-      console.error(`❌ ${providerName} Error details:`, JSON.stringify(result.reason, null, 2));
-    } else {
-      console.log(`⚠️ ${providerName} returned 0 events (fulfilled but empty)`);
-    }
-  });
-
-  if (allEvents.length === 0) {
-    console.log('❌ No events found from any provider');
-    return [];
-  }
-
-  // Deduplicate and return up to 20 best events
-  const uniqueEvents = deduplicateEvents(allEvents);
-  console.log(`📊 Total unique events after deduplication: ${uniqueEvents.length}`);
-
-  return uniqueEvents.slice(0, 20); // Return 20 events per search
-}
-
-async function searchWithSerpAPI(searchData: SearchRequest, weather: any) {
-  const SERP_API_KEY = Deno.env.get('SERP_API_KEY');
-
-  // Enhanced query with hidden gems and weather context
-  const weatherContext = weather.indoor_recommended ? 'indoor' : '';
-  const query = `"${searchData.activity_type}" ${weatherContext} events "${searchData.location}" ${searchData.timeframe} 2025 tickets "hidden gems" OR "local favorites"`;
-
-  console.log(`🔍 SerpAPI query (enhanced + weather-aware): ${query}`);
-
-  const response = await fetch(
-    `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERP_API_KEY}&num=30`
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`SerpAPI error ${response.status}: ${errorText}`);
-  }
-
-  const data = await response.json();
-  return processSerpResults(data, searchData);
-}
-
-function processSerpResults(serpData: any, searchData: SearchRequest) {
-  const events: any[] = [];
-
-  if (serpData.organic_results) {
-    // Process more results (up to 15 for better variety)
-    serpData.organic_results.slice(0, 15).forEach((result: any, index: number) => {
-      if (result.title && result.snippet) {
-        events.push({
-          title: cleanEventTitle(result.title),
-          description: result.snippet,
-          date: getDateInTimeframe(searchData.timeframe, index),
-          time: getRandomTime(),
-          location: searchData.location,
-          venue: extractVenue(result.title, searchData.location),
-          address: `${searchData.location} - See website`,
-          price: extractPrice(result.snippet) || 'See website',
-          category: searchData.activity_type,
-          special_feature: 'Real event from web search',
-          organizer: 'Event Organizer',
-          capacity: 'See website',
-          tags: [searchData.activity_type.toLowerCase(), 'real-event'],
-          ticket_link: result.link || null,
-          source: 'SerpAPI',
-          real_event: true,
-          image_url: getEventImage(searchData.activity_type),
-        });
-      }
-    });
-  }
-
-  console.log(`📊 SerpAPI processed ${events.length} events`);
-  return events;
-}
-
-async function searchWithPerplexity(searchData: SearchRequest, weather: any) {
-  console.log('🤖 [Perplexity] Starting search...');
-  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-
-  if (!PERPLEXITY_API_KEY) {
-    console.error('❌ [Perplexity] API key is missing!');
-    throw new Error('PERPLEXITY_API_KEY not configured');
-  }
-
-  // Add weather context to query if available
-  const weatherContext = weather.indoor_recommended
-    ? 'Focus on INDOOR events due to bad weather.'
-    : 'Include both indoor and outdoor events.';
-
-  const currentDate = new Date().toISOString().split('T')[0];
-  const query = `Find 15 real upcoming ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe} starting from ${currentDate}. ${weatherContext} Include event names, FUTURE dates (not past dates), venues, ticket prices, and official website links. Return JSON array format with accurate information.`;
-
-  console.log(`🔍 [Perplexity] Query: ${query}`);
-  console.log(`🔍 [Perplexity] Using model: sonar-pro`);
-
-  try {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'sonar-pro', // Latest Perplexity model (replaces llama-3.1-sonar-*-online)
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a real event finder with web access. Search thoroughly for real, upcoming events and return them in JSON array format with fields: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, website. Take your time to find quality events.',
-          },
-          {
-            role: 'user',
-            content: query,
-          },
-        ],
-        max_tokens: 5000, // Increased for more comprehensive results
-        temperature: 0.2, // Low temperature for accurate results
-      }),
-    });
-
-    console.log(`📡 [Perplexity] Response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ [Perplexity] API returned error ${response.status}:`, errorText);
-      throw new Error(`Perplexity error ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log(`✅ [Perplexity] Got response, processing results...`);
-    const events = processPerplexityResults(data.choices[0].message.content, searchData);
-    console.log(`📊 [Perplexity] Processed ${events.length} events`);
-    return events;
-  } catch (error) {
-    console.error('❌ [Perplexity] Fatal error:', error);
-    throw error;
-  }
-}
-
-function processPerplexityResults(content: string, searchData: SearchRequest) {
-  const events: any[] = [];
-
-  try {
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      const parsedEvents = JSON.parse(jsonMatch[0]);
-      const eventArray = Array.isArray(parsedEvents) ? parsedEvents : [parsedEvents];
-
-      eventArray.forEach((event: any) => {
-        events.push({
-          title: cleanEventTitle(event.title || event.name || 'Event'),
-          description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
-          date: event.date || getDateInTimeframe(searchData.timeframe, 0),
-          time: event.time || getRandomTime(),
-          location: searchData.location,
-          venue: event.venue || `${searchData.location} Venue`,
-          address: event.address || searchData.location,
-          price: event.price || 'See website',
-          category: searchData.activity_type,
-          special_feature: 'Real event from web search',
-          organizer: event.organizer || 'Event Organizer',
-          capacity: 'See website',
-          tags: [searchData.activity_type.toLowerCase(), 'real-event'],
-          ticket_link: event.website || event.url || null,
-          source: 'Perplexity',
-          real_event: true,
-          image_url: getEventImage(searchData.activity_type),
-        });
-      });
-    } else {
-      console.log('⚠️ Perplexity did not return JSON format, parsing text...');
-      // Try to extract event info from plain text if no JSON
-      const lines = content.split('\n');
-      let currentEvent: any = {};
-
-      lines.forEach((line) => {
-        if (line.match(/^\d+\./)) {
-          // New event starting
-          if (currentEvent.title) {
-            events.push(formatPerplexityEvent(currentEvent, searchData));
-          }
-          currentEvent = { title: line.replace(/^\d+\.\s*/, '').trim() };
-        } else if (line.includes('Date:')) {
-          currentEvent.date = line.replace(/Date:\s*/i, '').trim();
-        } else if (line.includes('Venue:')) {
-          currentEvent.venue = line.replace(/Venue:\s*/i, '').trim();
-        } else if (line.includes('Price:')) {
-          currentEvent.price = line.replace(/Price:\s*/i, '').trim();
-        }
-      });
-
-      if (currentEvent.title) {
-        events.push(formatPerplexityEvent(currentEvent, searchData));
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing Perplexity results:', error);
-  }
-
-  console.log(`📊 Perplexity processed ${events.length} events`);
-  return events.slice(0, 15); // Return up to 15 events
-}
-
-async function enhanceEventsWithAI(events: any[], searchData: SearchRequest) {
-  console.log(`🎨 [Enhancement] Starting to enhance ${events.length} real events with AI...`);
-  console.log(`🎨 [Enhancement] Available APIs:`, {
-    openai: Deno.env.get('OPENAI_API_KEY') ? '✅ Available' : '❌ Missing',
-    gemini: Deno.env.get('GOOGLE_AI_API_KEY') ? '✅ Available' : '❌ Missing',
-  });
-
-  // If we have OpenAI or Gemini, enhance the descriptions and details
-  if (Deno.env.get('OPENAI_API_KEY')) {
-    console.log('🎨 [Enhancement] Trying OpenAI for enhancement...');
-    try {
-      const enhanced = await enhanceWithOpenAI(events, searchData);
-      console.log(`✅ [Enhancement] OpenAI enhanced ${enhanced.length} events successfully`);
-      return enhanced;
-    } catch (error) {
-      console.error('❌ [Enhancement] OpenAI enhancement failed:', error);
-      console.log('🔄 [Enhancement] Will try Gemini next...');
-    }
-  } else {
-    console.log('⚠️ [Enhancement] OpenAI API key not configured, skipping OpenAI');
-  }
-
-  if (Deno.env.get('GOOGLE_AI_API_KEY')) {
-    console.log('🎨 [Enhancement] Trying Gemini for enhancement...');
-    try {
-      const enhanced = await enhanceWithGemini(events, searchData);
-      console.log(`✅ [Enhancement] Gemini enhanced ${enhanced.length} events successfully`);
-      return enhanced;
-    } catch (error) {
-      console.error('❌ [Enhancement] Gemini enhancement failed:', error);
-      console.log('⚠️ [Enhancement] Will return raw events without enhancement');
-    }
-  } else {
-    console.log('⚠️ [Enhancement] Gemini API key not configured, skipping Gemini');
-  }
-
-  // No AI available, return events as-is
-  console.log('⚠️ [Enhancement] No AI API available for enhancement, returning raw SerpAPI/Perplexity events');
-  return events;
-}
-
-async function generateEventsWithAI(searchData: SearchRequest) {
-  // Try OpenAI first
-  if (Deno.env.get('OPENAI_API_KEY')) {
-    try {
-      return await generateWithOpenAI(searchData);
-    } catch (error) {
-      console.error('OpenAI failed:', error);
-    }
-  }
-
-  // Try Gemini as fallback
-  if (Deno.env.get('GOOGLE_AI_API_KEY')) {
-    try {
-      return await generateWithGemini(searchData);
-    } catch (error) {
-      console.error('Gemini failed:', error);
-    }
-  }
-
-  // Last resort: return mock events
-  return generateMockEvents(searchData);
-}
-
-async function generateWithOpenAI(searchData: SearchRequest) {
-  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-  const prompt = createEventPrompt(searchData);
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert event curator. Return valid JSON only.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.8,
-      max_tokens: 2000,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0].message.content;
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-
-  if (!jsonMatch) throw new Error('No valid JSON in response');
-
-  const events = JSON.parse(jsonMatch[0]);
-  return events.map((e: any) => ({
-    ...e,
-    location: searchData.location,
-    category: searchData.activity_type,
-    source: 'OpenAI',
-    real_event: false,
-    image_url: getEventImage(searchData.activity_type),
-  }));
-}
-
-async function generateWithGemini(searchData: SearchRequest) {
-  const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-  const prompt = createEventPrompt(searchData);
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_AI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 2000 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Gemini error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.candidates[0].content.parts[0].text;
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-
-  if (!jsonMatch) throw new Error('No valid JSON in response');
-
-  const events = JSON.parse(jsonMatch[0]);
-  return events.map((e: any) => ({
-    ...e,
-    location: searchData.location,
-    category: searchData.activity_type,
-    source: 'Gemini',
-    real_event: false,
-    image_url: getEventImage(searchData.activity_type),
-  }));
-}
-
-async function enhanceWithOpenAI(events: any[], searchData: SearchRequest) {
-  console.log(`🤖 [OpenAI Enhancement] Processing ${events.length} events...`);
-  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-
-  const prompt = `You are an event data enhancer. Below are real events found from web search. Please improve their descriptions, ensure consistency, and fill in any missing details while keeping the core information accurate.
-
-Search Context: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}
-
-Events to enhance:
-${JSON.stringify(events, null, 2)}
-
-Return a JSON array with the same structure but improved descriptions, validated dates, and better formatting. Keep ticket_link, source, and real_event fields unchanged.`;
-
-  console.log(`🤖 [OpenAI Enhancement] Calling OpenAI API with gpt-4o-mini...`);
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You enhance event data by improving descriptions and ensuring consistency. Return valid JSON only.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.3, // Lower temperature for consistency
-      max_tokens: 3000,
-    }),
-  });
-
-  console.log(`📡 [OpenAI Enhancement] Response status: ${response.status}`);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`❌ [OpenAI Enhancement] API error ${response.status}:`, errorText);
-    throw new Error(`OpenAI enhancement error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0].message.content;
-  console.log(`✅ [OpenAI Enhancement] Got response, parsing JSON...`);
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-
-  if (!jsonMatch) {
-    console.log('⚠️ [OpenAI Enhancement] Response has no valid JSON, using original events');
-    return events;
-  }
-
-  const enhancedEvents = JSON.parse(jsonMatch[0]);
-  console.log(`✅ [OpenAI Enhancement] Successfully enhanced ${enhancedEvents.length} events`);
-  return enhancedEvents;
-}
-
-async function enhanceWithGemini(events: any[], searchData: SearchRequest) {
-  const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
-
-  const prompt = `You are an event data enhancer. Below are real events found from web search. Please improve their descriptions, ensure consistency, and fill in any missing details while keeping the core information accurate.
-
-Search Context: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}
-
-Events to enhance:
-${JSON.stringify(events, null, 2)}
-
-Return a JSON array with the same structure but improved descriptions, validated dates, and better formatting. Keep ticket_link, source, and real_event fields unchanged.`;
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_AI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Gemini enhancement error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.candidates[0].content.parts[0].text;
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-
-  if (!jsonMatch) {
-    console.log('⚠️ Gemini enhancement returned invalid JSON, using original events');
-    return events;
-  }
-
-  const enhancedEvents = JSON.parse(jsonMatch[0]);
-  console.log(`✅ Gemini enhanced ${enhancedEvents.length} events`);
-  return enhancedEvents;
-}
-
-function generateMockEvents(searchData: SearchRequest): any[] {
-  const events = [];
-  for (let i = 0; i < 20; i++) {
-    events.push({
-      title: `${searchData.activity_type} Event ${i + 1}`,
-      description: `Exciting ${searchData.activity_type} event in ${searchData.location}`,
-      date: getDateInTimeframe(searchData.timeframe, i),
-      time: getRandomTime(),
-      location: searchData.location,
-      venue: `${searchData.location} Venue ${i + 1}`,
-      address: `${i + 1} Main St, ${searchData.location}`,
-      price: '$20-40',
-      category: searchData.activity_type,
-      special_feature: 'Mock event for testing',
-      source: 'Mock Data',
-      real_event: false,
-      image_url: getEventImage(searchData.activity_type),
-    });
-  }
-  return events;
-}
-
-// =====================================================
-// Utility Functions
-// =====================================================
-
-function createEventPrompt(searchData: SearchRequest): string {
-  return `Generate 20 realistic events for: ${searchData.activity_type} in ${searchData.location} for ${searchData.timeframe}. Return JSON array with: title, description, date (YYYY-MM-DD), time (HH:MM), venue, address, price, organizer, capacity, special_feature, tags.`;
 }
 
 function getDateRange(timeframe: string) {
@@ -905,30 +874,25 @@ function getDateInTimeframe(timeframe: string, offset: number): string {
 
   switch (timeframe.toLowerCase()) {
     case 'today':
-      // Keep events within today, spaced a few hours apart
       date.setHours(date.getHours() + offset * 2);
       break;
     case 'this week':
-      // Ensure dates are always in the future, starting from tomorrow
       date.setDate(now.getDate() + 1 + offset);
       break;
     case 'next week':
       date.setDate(now.getDate() + 7 + offset);
       break;
     case 'this month':
-      // Ensure dates are always in the future, starting from tomorrow
       date.setDate(now.getDate() + 1 + offset * 3);
       break;
     case 'next month':
       date.setMonth(now.getMonth() + 1);
-      date.setDate(Math.min(offset * 4 + 1, 28)); // Avoid invalid dates
+      date.setDate(Math.min(offset * 4 + 1, 28));
       break;
     default:
-      // Default to future dates starting tomorrow
       date.setDate(now.getDate() + 1 + offset * 2);
   }
 
-  // Ensure we never return a past date
   if (date < now) {
     date.setDate(now.getDate() + 1 + offset);
   }
@@ -936,67 +900,22 @@ function getDateInTimeframe(timeframe: string, offset: number): string {
   return date.toISOString().split('T')[0];
 }
 
-function getRandomTime(): string {
-  const hours = Math.floor(Math.random() * 12) + 10;
-  const minutes = Math.random() < 0.5 ? '00' : '30';
-  return `${hours.toString().padStart(2, '0')}:${minutes}`;
-}
-
-function extractVenue(title: string, location: string): string {
-  const venuePattern = /(at|@)\s+([^-,]+)/i;
-  const match = title.match(venuePattern);
-  return match ? match[2].trim() : `${location} Venue`;
-}
-
-function extractPrice(snippet: string): string | null {
-  const pricePatterns = [/\$\d+(?:-\$?\d+)?/, /free/i, /€\d+(?:-€?\d+)?/, /£\d+(?:-£?\d+)?/];
-  for (const pattern of pricePatterns) {
-    const match = snippet.match(pattern);
-    if (match) return match[0];
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    console.warn('Invalid date format:', dateStr);
   }
-  return null;
+  return '';
 }
 
-function deduplicateEvents(events: any[]): any[] {
-  const seen = new Set();
-  return events.filter((event) => {
-    const key = `${event.title}-${event.date}-${event.venue}`.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function cleanEventTitle(title: string): string {
-  // Remove common SEO junk from event titles
-  return title
-    .replace(/\s*-\s*Eventbrite.*$/i, '')
-    .replace(/\s*\|\s*Tickets.*$/i, '')
-    .replace(/\s*-\s*Ticketmaster.*$/i, '')
-    .replace(/\s*-\s*Buy Tickets.*$/i, '')
-    .trim();
-}
-
-function formatPerplexityEvent(event: any, searchData: SearchRequest) {
-  return {
-    title: cleanEventTitle(event.title || 'Event'),
-    description: event.description || `${searchData.activity_type} event in ${searchData.location}`,
-    date: event.date || getDateInTimeframe(searchData.timeframe, 0),
-    time: event.time || getRandomTime(),
-    location: searchData.location,
-    venue: event.venue || `${searchData.location} Venue`,
-    address: event.address || searchData.location,
-    price: event.price || 'See website',
-    category: searchData.activity_type,
-    special_feature: 'Real event from web search',
-    organizer: event.organizer || 'Event Organizer',
-    capacity: 'See website',
-    tags: [searchData.activity_type.toLowerCase(), 'real-event'],
-    ticket_link: event.website || event.url || null,
-    source: 'Perplexity',
-    real_event: true,
-    image_url: getEventImage(searchData.activity_type),
-  };
+function generateEventId(event: any, index: number): string {
+  const title = event.title || 'event';
+  const date = event.date || new Date().toISOString();
+  return `${title.toLowerCase().replace(/\s+/g, '-')}-${date}-${index}`;
 }
 
 function getEventImage(category: string): string {

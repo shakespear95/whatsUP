@@ -155,29 +155,26 @@ serve(async (req) => {
 // =====================================================
 
 async function searchWithAgent(searchData: SearchRequest) {
-  console.log('🤖 Initializing AI Agent - Thorough Search Mode (2-5 minutes)...');
+  console.log('🤖 Initializing AI Agent - Fast Search Mode...');
   const startTime = Date.now();
 
   // Step 1: Get weather data
   console.log('📊 PHASE 1/5: Analyzing weather conditions...');
   const weather = await getWeatherData(searchData.location);
   console.log(`🌤️ Weather: ${weather.condition}, ${weather.temperature}°C`);
-  await delay(5000); // 5 second delay for weather analysis
 
   // Step 2: Coordinator Agent - Create optimized search queries
   console.log('🧠 PHASE 2/5: AI Coordinator creating search strategy...');
   const searchStrategy = await createSearchStrategy(searchData, weather);
   console.log(`✅ Strategy created: ${searchStrategy.queries.length} optimized queries`);
-  await delay(15000); // 15 second delay for strategy planning
 
   // Step 3: Deep web search with multiple sources
-  console.log('🔍 PHASE 3/5: Searching web for real events (60-90 seconds)...');
+  console.log('🔍 PHASE 3/5: Searching web for real events...');
   const realEvents = await searchRealEventsInParallel(searchData, weather);
   console.log(`📋 Found ${realEvents.length} candidate events`);
-  await delay(60000); // 60 second delay for thorough web search
 
   // Step 4: AI Enhancement and Quality Check
-  console.log('🤖 PHASE 4/5: AI analyzing and enhancing results (45-60 seconds)...');
+  console.log('🤖 PHASE 4/5: AI analyzing and enhancing results...');
   let enhancedEvents;
   if (realEvents.length === 0) {
     console.log('⚠️ No real events found, generating with AI...');
@@ -185,12 +182,10 @@ async function searchWithAgent(searchData: SearchRequest) {
   } else {
     enhancedEvents = await enhanceEventsWithClaudeAgent(realEvents, searchData, weather);
   }
-  await delay(45000); // 45 second delay for AI enhancement
 
   // Step 5: Geocoding and final processing
   console.log('📍 PHASE 5/5: Adding coordinates and finalizing...');
   const eventsWithCoords = await addCoordinatesToEvents(enhancedEvents);
-  await delay(10000); // 10 second delay for geocoding
 
   const totalTime = Math.round((Date.now() - startTime) / 1000);
   console.log(`✅ Search complete! ${eventsWithCoords.length} unique events found in ${totalTime}s`);
@@ -487,7 +482,7 @@ Return as a JSON array with 8-12 events. NO generic names like "Event" or "Conce
       'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'sonar', // Latest Perplexity model (fast and accurate)
+      model: 'llama-3.1-sonar-large-128k-online', // Perplexity model with web access
       messages: [
         {
           role: 'system',
@@ -699,7 +694,7 @@ You MUST return exactly ${events.length} events:`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20240620',
         max_tokens: 4000,
         messages: [
           {
@@ -835,7 +830,7 @@ async function generateEventsWithClaude(searchData: SearchRequest, weather: any)
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20240620',
         max_tokens: 4000,
         messages: [
           {
