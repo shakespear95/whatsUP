@@ -56,8 +56,8 @@ serve(async (req) => {
       location: searchData.location,
       activity_type: searchData.activity_type,
       timeframe: searchData.timeframe,
-      user_id: user.id,
-      user_email: user.email,
+      user_id: user?.id || 'guest',
+      user_email: user?.email || 'guest',
     });
 
     // Validate required fields
