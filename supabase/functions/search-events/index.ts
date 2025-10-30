@@ -331,9 +331,13 @@ Use your available tools strategically to find real, current events. Start with 
         'anthropic-beta': 'tools-2024-04-04'
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 8192,
         temperature: 0.3,
+        thinking: {
+          type: "enabled",
+          budget_tokens: 5000
+        },
         system: systemPrompt,
         messages: [
           {
@@ -448,9 +452,13 @@ async function processClaudeAgentResponse(
           'anthropic-beta': 'tools-2024-04-04'
         },
         body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 8192,
           temperature: 0.3,
+          thinking: {
+            type: "enabled",
+            budget_tokens: 3000
+          },
           system: `You are an expert Local Event Discovery Agent. Based on the tool results, provide a final list of 15-20 real events in JSON array format.`,
           messages: messages,
           tools: []

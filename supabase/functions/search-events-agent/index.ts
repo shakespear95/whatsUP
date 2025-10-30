@@ -694,8 +694,12 @@ You MUST return exactly ${events.length} events:`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 4000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 8000,
+        thinking: {
+          type: "enabled",
+          budget_tokens: 2000
+        },
         messages: [
           {
             role: 'user',
@@ -830,8 +834,12 @@ async function generateEventsWithClaude(searchData: SearchRequest, weather: any)
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 4000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 8000,
+        thinking: {
+          type: "enabled",
+          budget_tokens: 3000
+        },
         messages: [
           {
             role: 'user',
