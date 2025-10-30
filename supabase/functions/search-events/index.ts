@@ -38,25 +38,15 @@ serve(async (req) => {
       }
     );
 
-    // Get user from JWT token (REQUIRED for security)
+    // Get user from JWT token (optional for now - allows guest searches)
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    // SECURITY: Require authentication for search
     if (!user) {
-      console.log('❌ Unauthenticated search attempt blocked');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Authentication required. Please sign in to search for events.',
-          code: 'AUTH_REQUIRED'
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.log('⚠️ Unauthenticated search - allowing as guest');
+    } else {
+      console.log('✅ Authenticated search:', user.email);
     }
 
     // Parse request body
