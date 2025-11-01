@@ -441,7 +441,30 @@ async function processClaudeAgentResponse(
           model: 'claude-3-7-sonnet-20250219',
           max_tokens: 8192,
           temperature: 0.7,
-          system: `You are an expert Local Event Discovery Agent. Based on the tool results, provide a final list of 15-20 real events in JSON array format.`,
+          system: `You are an expert Local Event Discovery Agent. Based on the tool results you gathered, create a final list of 15-20 real events.
+
+CRITICAL: You MUST respond with ONLY a valid JSON array, nothing else. No explanations, no markdown, no additional text.
+
+Format each event as:
+[
+  {
+    "title": "Event Name",
+    "description": "Brief description",
+    "date": "YYYY-MM-DD",
+    "time": "HH:MM",
+    "location": "City",
+    "venue": "Venue Name",
+    "address": "Full address",
+    "price": "Price info",
+    "category": "${searchData.activity_type}",
+    "special_feature": "Highlights",
+    "ticket_link": "URL or null",
+    "source": "Source name",
+    "weather_suitable": true
+  }
+]
+
+Return the JSON array now:`,
           messages: messages,
           tools: []
         })
@@ -711,10 +734,14 @@ function extractEventsFromClaudeResponse(claudeResponse: any, searchData: Search
       content = claudeResponse.content;
     }
 
+    // Remove markdown code blocks if present
+    content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
     // Try to extract JSON array from the content
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       console.warn('⚠️ No JSON array found in Claude response');
+      console.log('📄 Response content:', content.substring(0, 500));
       return [];
     }
 
