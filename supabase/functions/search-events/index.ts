@@ -321,7 +321,7 @@ Use your available tools strategically to find real, current events. Start with 
         'anthropic-beta': 'tools-2024-04-04'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-7-sonnet-20250219',
         max_tokens: 8192,
         temperature: 0.3,
         thinking: {
@@ -442,7 +442,7 @@ async function processClaudeAgentResponse(
           'anthropic-beta': 'tools-2024-04-04'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-3-7-sonnet-20250219',
           max_tokens: 8192,
           temperature: 0.3,
           thinking: {
@@ -526,7 +526,7 @@ async function executePerplexitySearch(input: any, searchData: SearchRequest): P
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: input.model || 'llama-3.1-sonar-large-128k-online',
+        model: input.model || 'sonar',
         messages: [
           {
             role: 'system',
