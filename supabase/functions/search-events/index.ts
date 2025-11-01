@@ -323,11 +323,7 @@ Use your available tools strategically to find real, current events. Start with 
       body: JSON.stringify({
         model: 'claude-3-7-sonnet-20250219',
         max_tokens: 8192,
-        temperature: 1,
-        thinking: {
-          type: "enabled",
-          budget_tokens: 5000
-        },
+        temperature: 0.7,
         system: systemPrompt,
         messages: [
           {
@@ -444,11 +440,7 @@ async function processClaudeAgentResponse(
         body: JSON.stringify({
           model: 'claude-3-7-sonnet-20250219',
           max_tokens: 8192,
-          temperature: 1,
-          thinking: {
-            type: "enabled",
-            budget_tokens: 3000
-          },
+          temperature: 0.7,
           system: `You are an expert Local Event Discovery Agent. Based on the tool results, provide a final list of 15-20 real events in JSON array format.`,
           messages: messages,
           tools: []
