@@ -286,21 +286,32 @@ async function executeClaudeAgentSearch(searchData: SearchRequest): Promise<any[
 - Focus on events within the specified timeframe
 - Return structured data that can be parsed and stored
 
+## When to Stop Using Tools:
+After you've gathered sufficient information from 1-3 tool calls, STOP using tools and provide your final answer.
+
 ## Output Format:
-Return events as a JSON array with consistent structure:
-- title: Event name
-- description: Brief compelling description (2-3 sentences)
-- date: YYYY-MM-DD format
-- time: HH:MM format
-- location: City/area
-- venue: Specific venue name
-- address: Full address if available
-- price: Price or price range
-- category: Event category
-- special_feature: Unique aspects or highlights
-- ticket_link: URL for tickets/registration if available
-- source: Where the information was found
-- weather_suitable: boolean for outdoor events`;
+When you're ready with your final answer, return ONLY a valid JSON array - no explanations, no markdown, no text before or after.
+
+CRITICAL: Return ONLY the JSON array, like this:
+[
+  {
+    "title": "Event Name",
+    "description": "Brief compelling description (2-3 sentences)",
+    "date": "YYYY-MM-DD",
+    "time": "HH:MM",
+    "location": "City/area",
+    "venue": "Specific venue name",
+    "address": "Full address if available",
+    "price": "Price or price range",
+    "category": "Event category matching user request",
+    "special_feature": "Unique aspects or highlights",
+    "ticket_link": "URL for tickets/registration or null",
+    "source": "Where information was found",
+    "weather_suitable": true
+  }
+]
+
+Do NOT add any text like "Let me search" or "Here are the events". Return ONLY the JSON array.`;
 
   // User prompt with search parameters
   const userPrompt = `Find the best ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}.
@@ -428,7 +439,7 @@ async function processClaudeAgentResponse(
         content: toolResults
       });
 
-      // Get Claude's next response
+      // Get Claude's next response (might use more tools or give final answer)
       const nextResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -441,32 +452,9 @@ async function processClaudeAgentResponse(
           model: 'claude-3-7-sonnet-20250219',
           max_tokens: 8192,
           temperature: 0.7,
-          system: `You are an expert Local Event Discovery Agent. Based on the tool results you gathered, create a final list of 15-20 real events.
-
-CRITICAL: You MUST respond with ONLY a valid JSON array, nothing else. No explanations, no markdown, no additional text.
-
-Format each event as:
-[
-  {
-    "title": "Event Name",
-    "description": "Brief description",
-    "date": "YYYY-MM-DD",
-    "time": "HH:MM",
-    "location": "City",
-    "venue": "Venue Name",
-    "address": "Full address",
-    "price": "Price info",
-    "category": "${searchData.activity_type}",
-    "special_feature": "Highlights",
-    "ticket_link": "URL or null",
-    "source": "Source name",
-    "weather_suitable": true
-  }
-]
-
-Return the JSON array now:`,
+          system: systemPrompt,
           messages: messages,
-          tools: []
+          tools: tools  // Keep tools available in case Claude needs more data
         })
       });
 
