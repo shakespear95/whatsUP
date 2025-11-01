@@ -323,7 +323,7 @@ Use your available tools strategically to find real, current events. Start with 
       body: JSON.stringify({
         model: 'claude-3-7-sonnet-20250219',
         max_tokens: 8192,
-        temperature: 0.3,
+        temperature: 1,
         thinking: {
           type: "enabled",
           budget_tokens: 5000
@@ -444,7 +444,7 @@ async function processClaudeAgentResponse(
         body: JSON.stringify({
           model: 'claude-3-7-sonnet-20250219',
           max_tokens: 8192,
-          temperature: 0.3,
+          temperature: 1,
           thinking: {
             type: "enabled",
             budget_tokens: 3000
