@@ -140,52 +140,44 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 </div>
               )}
 
-              {/* Send Code Button - LARGE AND VISIBLE */}
-              <div className="space-y-3 mt-4">
-                <Button
-                  onClick={handleSendCode}
-                  disabled={loading || !email}
-                  className="w-full h-16 text-xl bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold shadow-2xl rounded-2xl"
-                  size="lg"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                      <span>Sending Email...</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-3">
-                      <Mail className="w-6 h-6" />
-                      <span>SEND CODE</span>
-                      <ArrowRight className="w-6 h-6" />
-                    </span>
-                  )}
-                </Button>
-
-                {/* Fallback native button for mobile - EXTRA VISIBLE */}
-                <button
-                  onClick={handleSendCode}
-                  disabled={loading || !email}
-                  className="w-full h-16 text-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-extrabold shadow-2xl rounded-2xl transition-all border-4 border-white"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '1.5rem',
-                    gap: '12px',
-                    cursor: loading || !email ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {loading ? (
-                    <span style={{ fontSize: '18px', fontWeight: 'bold' }}>⏳ SENDING...</span>
-                  ) : (
-                    <>
-                      <Mail className="w-7 h-7" style={{ minWidth: '28px', minHeight: '28px' }} />
-                      <span style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '0.5px' }}>SEND LOGIN CODE</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* Send Code Button - ALWAYS VISIBLE WITH STRONG COLOR */}
+              <button
+                onClick={handleSendCode}
+                disabled={loading || !email}
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  backgroundColor: (!email || loading) ? '#8B5CF6' : '#7C3AED',
+                  color: '#FFFFFF',
+                  fontSize: '22px',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  borderRadius: '16px',
+                  border: '4px solid #6D28D9',
+                  boxShadow: '0 10px 30px rgba(124, 58, 237, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  padding: '24px',
+                  cursor: loading || !email ? 'not-allowed' : 'pointer',
+                  opacity: (!email || loading) ? 0.7 : 1,
+                  transition: 'all 0.3s ease',
+                  marginTop: '16px'
+                }}
+              >
+                {loading ? (
+                  <span style={{ fontSize: '22px', fontWeight: '900' }}>
+                    ⏳ SENDING...
+                  </span>
+                ) : (
+                  <>
+                    <Mail style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px' }} />
+                    <span>SEND LOGIN CODE</span>
+                    <ArrowRight style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px' }} />
+                  </>
+                )}
+              </button>
 
               {/* Info Box */}
               <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
