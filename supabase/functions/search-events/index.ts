@@ -277,6 +277,29 @@ async function executeClaudeAgentSearch(searchData: SearchRequest): Promise<any[
         },
         required: ["location"]
       }
+    },
+    {
+      name: "facebook_events",
+      description: "Search Facebook for public events in a specific location. Great for finding community events, concerts, and local happenings.",
+      input_schema: {
+        type: "object",
+        properties: {
+          location: {
+            type: "string",
+            description: "Location to search for Facebook events"
+          },
+          query: {
+            type: "string",
+            description: "Search query for specific type of events"
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of events to return (default: 20)",
+            default: 20
+          }
+        },
+        required: ["location"]
+      }
     }
   ];
 
@@ -601,6 +624,9 @@ async function executeToolCall(
     case 'weather_check':
       return await executeWeatherCheck(toolInput);
 
+    case 'facebook_events':
+      return await executeFacebookEventsSearch(toolInput, searchData);
+
     default:
       console.warn(`⚠️ Unknown tool requested: ${toolName}`);
       return { error: `Unknown tool: ${toolName}` };
@@ -799,6 +825,114 @@ async function executeWeatherCheck(input: any): Promise<any> {
   } catch (error) {
     console.error('❌ Weather check failed:', error);
     return { error: error.message };
+  }
+}
+
+/**
+ * Tool Implementation: Facebook Events Search
+ * Uses Meta Graph API to fetch public Facebook events
+ */
+async function executeFacebookEventsSearch(input: any, searchData: SearchRequest): Promise<any> {
+  console.log('📘 Executing Facebook Events search...');
+
+  const META_GRAPH_TOKEN = Deno.env.get('META_GRAPH_ACCESS_TOKEN');
+
+  if (!META_GRAPH_TOKEN) {
+    console.warn('⚠️ Meta Graph API token not configured');
+    return { error: 'Meta Graph API token not configured' };
+  }
+
+  try {
+    const location = input.location || searchData.location;
+    const query = input.query || searchData.activity_type;
+    const limit = input.limit || 20;
+
+    // First, search for events using the Graph API
+    // Note: Facebook deprecated public event search in 2018, but we can still get events from pages
+    // We'll search for pages/venues related to the location and activity type
+    const searchQuery = encodeURIComponent(`${query} events ${location}`);
+
+    // Search for pages that might have events
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/search?q=${searchQuery}&type=page&limit=10&access_token=${META_GRAPH_TOKEN}`
+    );
+
+    if (!pagesResponse.ok) {
+      throw new Error(`Facebook API error: ${pagesResponse.status}`);
+    }
+
+    const pagesData = await pagesResponse.json();
+
+    if (!pagesData.data || pagesData.data.length === 0) {
+      console.log('ℹ️ No Facebook pages found for query');
+      return {
+        success: true,
+        events: [],
+        message: 'No Facebook events found for this search'
+      };
+    }
+
+    // Fetch events from each page
+    const allEvents = [];
+
+    for (const page of pagesData.data.slice(0, 5)) { // Check up to 5 pages
+      try {
+        const eventsResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${page.id}/events?fields=id,name,description,start_time,end_time,place,cover,ticket_uri,is_online,event_times&limit=10&access_token=${META_GRAPH_TOKEN}`
+        );
+
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+
+          if (eventsData.data && eventsData.data.length > 0) {
+            // Filter for upcoming events only
+            const now = new Date();
+            const upcomingEvents = eventsData.data.filter((event: any) => {
+              const eventDate = new Date(event.start_time);
+              return eventDate >= now;
+            });
+
+            allEvents.push(...upcomingEvents);
+          }
+        }
+      } catch (pageError) {
+        console.warn(`⚠️ Could not fetch events from page ${page.id}:`, pageError.message);
+        // Continue with other pages
+      }
+    }
+
+    // Format events for Claude
+    const formattedEvents = allEvents.slice(0, limit).map((event: any) => ({
+      id: event.id,
+      name: event.name,
+      description: event.description || 'No description available',
+      start_time: event.start_time,
+      end_time: event.end_time,
+      location: event.place?.name || location,
+      address: event.place?.location?.street ? `${event.place.location.street}, ${event.place.location.city || ''}` : null,
+      latitude: event.place?.location?.latitude,
+      longitude: event.place?.location?.longitude,
+      ticket_link: event.ticket_uri || `https://facebook.com/events/${event.id}`,
+      image: event.cover?.source,
+      is_online: event.is_online || false,
+      source: 'Facebook Events'
+    }));
+
+    console.log(`✅ Found ${formattedEvents.length} Facebook events`);
+
+    return {
+      success: true,
+      events: formattedEvents,
+      count: formattedEvents.length,
+      source: 'Meta Graph API'
+    };
+
+  } catch (error) {
+    console.error('❌ Facebook Events search failed:', error);
+    return {
+      error: error.message,
+      details: 'Facebook public event search has limitations. Some events may not be accessible.'
+    };
   }
 }
 
