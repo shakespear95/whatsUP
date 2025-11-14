@@ -158,26 +158,50 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 </ul>
               </div>
 
-              <Button
-                onClick={handleSendCode}
-                disabled={loading || !email}
-                className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold shadow-lg"
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    Send Code
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
-              </Button>
+              {/* Send Code Button - Multiple versions to ensure visibility */}
+              <div className="space-y-2 mt-4">
+                <Button
+                  onClick={handleSendCode}
+                  disabled={loading || !email}
+                  className="w-full h-14 text-lg bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold shadow-xl rounded-xl"
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Sending Email...
+                    </>
+                  ) : (
+                    <>
+                      📧 Send Code to Email
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
+                </Button>
 
-              <p className="text-xs text-center text-muted-foreground">
+                {/* Fallback native button for mobile */}
+                <button
+                  onClick={handleSendCode}
+                  disabled={loading || !email}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold shadow-xl rounded-xl flex items-center justify-center gap-2 transition-all"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1rem',
+                    border: 'none',
+                    cursor: loading || !email ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {loading ? (
+                    <>⏳ Sending...</>
+                  ) : (
+                    <>✉️ Send Login Code</>
+                  )}
+                </button>
+              </div>
+
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400 mt-3 font-medium">
                 No password required! You'll receive a one-time code.
               </p>
             </div>
