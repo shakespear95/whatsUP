@@ -140,26 +140,8 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 </div>
               )}
 
-              {/* Info Box */}
-              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
-                  <KeyRound className="w-4 h-4" />
-                  Two ways to sign in:
-                </h4>
-                <ul className="space-y-1 text-sm text-purple-700 dark:text-purple-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 font-bold">1.</span>
-                    <span>Click the <strong>Magic Link</strong> in the email</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 font-bold">2.</span>
-                    <span>Enter the <strong>6-digit code</strong> here</span>
-                  </li>
-                </ul>
-              </div>
-
               {/* Send Code Button - LARGE AND VISIBLE */}
-              <div className="space-y-3 mt-6">
+              <div className="space-y-3 mt-4">
                 <Button
                   onClick={handleSendCode}
                   disabled={loading || !email}
@@ -203,6 +185,24 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
+                  <KeyRound className="w-4 h-4" />
+                  Two ways to sign in:
+                </h4>
+                <ul className="space-y-1 text-sm text-purple-700 dark:text-purple-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">1.</span>
+                    <span>Click the <strong>Magic Link</strong> in the email</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">2.</span>
+                    <span>Enter the <strong>6-digit code</strong> here</span>
+                  </li>
+                </ul>
               </div>
 
               <p className="text-sm text-center text-gray-600 dark:text-gray-400 mt-3 font-medium">
