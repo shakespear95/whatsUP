@@ -133,6 +133,8 @@ serve(async (req) => {
       await saveSearchHistory(supabaseClient, user.id, searchData, agentEvents.length, false);
     }
 
+    console.log(`✅ Returning ${agentEvents.length} events to client`);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -279,20 +281,23 @@ async function executeClaudeAgentSearch(searchData: SearchRequest): Promise<any[
 5. Synthesize all findings into a comprehensive list
 
 ## Important Guidelines:
-- Prioritize accuracy and real events over quantity
+- Aim for 20 unique, high-quality events per search
 - Include diverse event types matching the user's interests
 - Provide practical details (dates, times, prices, venues)
 - Consider weather conditions for outdoor events
 - Focus on events within the specified timeframe
+- Prioritize accuracy and real events
 - Return structured data that can be parsed and stored
 
 ## When to Stop Using Tools:
-After you've gathered sufficient information from 1-3 tool calls, STOP using tools and provide your final answer.
+IMPORTANT: After 4-6 tool calls, STOP using tools and immediately provide the JSON output. Do NOT make more searches. Do NOT say "Let me search for more". Just return the JSON array with the events you've found.
 
 ## Output Format:
-When you're ready with your final answer, return ONLY a valid JSON array - no explanations, no markdown, no text before or after.
+When you're done with tool calls, return ONLY a valid JSON array - NO explanations, NO markdown, NO text before or after, NO "Based on my searches" - ONLY the JSON array starting with [ and ending with ].
 
-CRITICAL: Return ONLY the JSON array, like this:
+YOU MUST RETURN JSON. DO NOT WRITE TEXT. DO NOT SAY "let me compile" OR "based on my searches". ONLY OUTPUT THE JSON ARRAY.
+
+Example - THIS IS EXACTLY WHAT YOUR OUTPUT SHOULD LOOK LIKE:
 [
   {
     "title": "Event Name",
@@ -306,12 +311,18 @@ CRITICAL: Return ONLY the JSON array, like this:
     "category": "Event category matching user request",
     "special_feature": "Unique aspects or highlights",
     "ticket_link": "URL for tickets/registration or null",
-    "source": "Where information was found",
-    "weather_suitable": true
+    "source": "Where information was found"
   }
 ]
 
-Do NOT add any text like "Let me search" or "Here are the events". Return ONLY the JSON array.`;
+CRITICAL RULES:
+- NO text before the [
+- NO text after the ]
+- NO "Based on my searches"
+- NO "Let me compile"
+- NO "Here are the events"
+- ONLY the JSON array
+- START your response with [ and END with ]`;
 
   // User prompt with search parameters
   const userPrompt = `Find the best ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}.
@@ -319,7 +330,11 @@ ${searchData.keywords ? `Additional keywords: ${searchData.keywords}` : ''}
 ${searchData.radius ? `Within ${searchData.radius}km radius` : ''}
 ${searchData.budget ? `Budget: ${searchData.budget}` : ''}
 
-Use your available tools strategically to find real, current events. Start with weather check if relevant, then use deep search tools to find comprehensive event information. Return 15-20 high-quality event recommendations.`;
+Use your available tools strategically to find real, current events. Start with weather check if relevant, then use deep search tools to find comprehensive event information.
+
+TARGET: Return 15-20 high-quality, diverse event recommendations. Use 4-6 tool calls maximum.
+
+CRITICAL: After your tool calls, respond ONLY with a JSON array. Do NOT write "Based on my searches" or any other text. Your entire response must be valid JSON starting with [ and ending with ].`;
 
   try {
     // Call Claude API with tool-use capability
@@ -357,7 +372,7 @@ Use your available tools strategically to find real, current events. Start with 
     console.log('✅ Claude initial response received');
 
     // Process Claude's response and handle tool calls
-    const events = await processClaudeAgentResponse(claudeResponse, searchData);
+    const events = await processClaudeAgentResponse(claudeResponse, searchData, systemPrompt, tools);
 
     return events;
 
@@ -373,7 +388,9 @@ Use your available tools strategically to find real, current events. Start with 
  */
 async function processClaudeAgentResponse(
   claudeResponse: any,
-  searchData: SearchRequest
+  searchData: SearchRequest,
+  systemPrompt: string,
+  tools: any[]
 ): Promise<any[]> {
   console.log('🔄 Processing Claude agent response...');
 
@@ -386,7 +403,7 @@ async function processClaudeAgentResponse(
 
   let assistantMessage = claudeResponse;
   let toolCallCount = 0;
-  const maxToolCalls = 10;
+  const maxToolCalls = 10; // Balanced for performance and event count
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
   // Agent loop - continue while Claude wants to use tools
@@ -473,8 +490,50 @@ async function processClaudeAgentResponse(
     }
   }
 
+  // If we hit max tool calls and Claude still wants to use tools, force it to stop
+  if (toolCallCount >= maxToolCalls && assistantMessage.stop_reason === 'tool_use') {
+    console.warn(`⚠️ Hit max tool calls (${maxToolCalls}), forcing final response...`);
+
+    // Send one final message asking for JSON output only
+    messages.push({
+      role: 'assistant',
+      content: assistantMessage.content
+    });
+
+    messages.push({
+      role: 'user',
+      content: [{
+        type: 'text',
+        text: 'You have reached the maximum number of tool calls. Please provide your final answer now as a JSON array of events. Do NOT request more tools. Output ONLY the JSON array.'
+      }]
+    });
+
+    const finalResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 8192,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: messages
+        // NO tools - force text-only response
+      })
+    });
+
+    if (finalResponse.ok) {
+      assistantMessage = await finalResponse.json();
+      console.log('✅ Got forced final response from Claude');
+    }
+  }
+
   // Extract events from Claude's final response
   const events = extractEventsFromClaudeResponse(assistantMessage, searchData);
+  console.log(`🎉 Agent search complete! Found ${events.length} events after ${toolCallCount} tool calls`);
   return events;
 }
 
@@ -533,7 +592,7 @@ async function executePerplexitySearch(input: any, searchData: SearchRequest): P
         messages: [
           {
             role: 'system',
-            content: 'You are a real event finder. Search for actual, current events and return structured data.'
+            content: 'You are a real event finder. Search for actual, current events and return structured data. Aim to find as many relevant events as possible (10-15 per search).'
           },
           {
             role: 'user',
@@ -725,15 +784,26 @@ function extractEventsFromClaudeResponse(claudeResponse: any, searchData: Search
     // Remove markdown code blocks if present
     content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
 
-    // Try to extract JSON array from the content
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    // Remove common conversational phrases that Claude adds
+    content = content.replace(/^.*?Based on my searches.*?(?=\[)/s, '');
+    content = content.replace(/^.*?Let me compile.*?(?=\[)/s, '');
+    content = content.replace(/^.*?Here are.*?(?=\[)/s, '');
+
+    // Try to extract JSON array from the content (greedy match to get full array)
+    const jsonMatch = content.match(/\[([\s\S]*)\]/);
     if (!jsonMatch) {
       console.warn('⚠️ No JSON array found in Claude response');
       console.log('📄 Response content:', content.substring(0, 500));
       return [];
     }
 
-    const events = JSON.parse(jsonMatch[0]);
+    // Reconstruct the JSON array
+    let jsonString = '[' + jsonMatch[1] + ']';
+
+    // Clean up potential JSON issues
+    jsonString = jsonString.replace(/,(\s*[\]}])/g, '$1'); // Remove trailing commas
+
+    const events = JSON.parse(jsonString);
 
     // Ensure all events have required fields and proper formatting
     return events.map((event: any, index: number) => ({
@@ -754,8 +824,7 @@ function extractEventsFromClaudeResponse(claudeResponse: any, searchData: Search
       ticket_link: event.ticket_link || event.url || null,
       source: event.source || 'AI Agent Search',
       real_event: true,
-      image_url: event.image_url || getEventImage(searchData.activity_type),
-      weather_suitable: event.weather_suitable !== undefined ? event.weather_suitable : true
+      image_url: event.image_url || getEventImage(searchData.activity_type)
     }));
 
   } catch (error) {
@@ -918,9 +987,8 @@ function formatDate(dateStr: string): string {
 }
 
 function generateEventId(event: any, index: number): string {
-  const title = event.title || 'event';
-  const date = event.date || new Date().toISOString();
-  return `${title.toLowerCase().replace(/\s+/g, '-')}-${date}-${index}`;
+  // Generate a proper UUID v4
+  return crypto.randomUUID();
 }
 
 function getEventImage(category: string): string {

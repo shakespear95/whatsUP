@@ -376,17 +376,23 @@ export default function App() {
         if (!matchesKeywords) return false;
       }
 
-      // Category filter
+      // Category filter (only apply if explicitly set by user)
       if (filters.categories.length > 0 || filters.subcategories.length > 0) {
         const categoryMapping: { [key: string]: string[] } = {
-          'konzerte': ['konzert', 'club', 'concert', 'music', 'concerts & music'],
-          'buehne': ['theater', 'theatre', 'stage', 'stage & theater'],
-          'kunst': ['ausstellung', 'art', 'kunst', 'exhibition', 'art & exhibitions'],
-          'familie': ['kinder', 'familie', 'family', 'kids', 'family & kids'],
-          'sport': ['sport', 'fitness', 'sports', 'sport & fitness'],
-          'messen': ['markt', 'messe', 'market', 'fair', 'markets & fairs'],
-          'kulinarik': ['festival', 'kulinarik', 'food', 'culinary', 'food & culinary'],
-          'wissen': ['workshop', 'wissen', 'learning', 'education', 'knowledge & workshops'],
+          'Concert': ['konzert', 'club', 'concert', 'music', 'concerts', 'party'],
+          'konzerte': ['konzert', 'club', 'concert', 'music', 'concerts', 'party'],
+          'buehne': ['theater', 'theatre', 'stage', 'bühne'],
+          'stage': ['theater', 'theatre', 'stage', 'bühne'],
+          'Art': ['ausstellung', 'art', 'kunst', 'exhibition', 'museum'],
+          'kunst': ['ausstellung', 'art', 'kunst', 'exhibition', 'museum'],
+          'Familiy': ['kinder', 'familie', 'family', 'kids'],
+          'familie': ['kinder', 'familie', 'family', 'kids'],
+          'sport': ['sport', 'fitness', 'sports', 'recreation'],
+          'messen': ['markt', 'messe', 'market', 'fair', 'trade show'],
+          'kulinarik': ['festival', 'kulinarik', 'food', 'culinary'],
+          'Food': ['festival', 'kulinarik', 'food', 'culinary'],
+          'wissen': ['workshop', 'wissen', 'learning', 'education', 'knowledge', 'business'],
+          'Knowledge': ['workshop', 'wissen', 'learning', 'education', 'knowledge', 'business'],
           'specials': ['special', 'unique', 'exclusive'],
           // New unique categories
           'unique-underground': ['underground', 'pop-up', 'secret', 'alternative', 'unique'],
@@ -399,14 +405,21 @@ export default function App() {
         // Check main categories
         if (filters.categories.length > 0) {
           for (const category of filters.categories) {
-            const allowedCategories = categoryMapping[category] || [category];
-            // Check if any allowed category matches the event category
-            const matched = allowedCategories.some(cat => event.category.toLowerCase().includes(cat));
+            const allowedCategories = categoryMapping[category] || [category.toLowerCase()];
+            // Check if any allowed category matches the event category (case-insensitive)
+            const eventCategoryLower = event.category.toLowerCase();
+            const matched = allowedCategories.some(cat =>
+              eventCategoryLower.includes(cat.toLowerCase()) ||
+              cat.toLowerCase().includes(eventCategoryLower)
+            );
             if (matched) {
               matchesCategory = true;
               break;
             }
           }
+        } else {
+          // If no specific categories are set but subcategories are, allow all main categories
+          matchesCategory = true;
         }
 
         // Check subcategories
@@ -425,8 +438,10 @@ export default function App() {
         if (!matchesCategory && searchResults.length > 0) {
           console.log('❌ Category mismatch:', {
             eventCategory: event.category,
+            eventCategoryLower: event.category.toLowerCase(),
             filterCategories: filters.categories,
-            filterSubcategories: filters.subcategories
+            filterSubcategories: filters.subcategories,
+            mappedCategories: filters.categories.map(c => categoryMapping[c] || [c])
           });
         }
 
