@@ -158,45 +158,49 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 </ul>
               </div>
 
-              {/* Send Code Button - Multiple versions to ensure visibility */}
-              <div className="space-y-2 mt-4">
+              {/* Send Code Button - LARGE AND VISIBLE */}
+              <div className="space-y-3 mt-6">
                 <Button
                   onClick={handleSendCode}
                   disabled={loading || !email}
-                  className="w-full h-14 text-lg bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold shadow-xl rounded-xl"
+                  className="w-full h-16 text-xl bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold shadow-2xl rounded-2xl"
                   size="lg"
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Sending Email...
-                    </>
+                    <span className="flex items-center justify-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span>Sending Email...</span>
+                    </span>
                   ) : (
-                    <>
-                      📧 Send Code to Email
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </>
+                    <span className="flex items-center justify-center gap-3">
+                      <Mail className="w-6 h-6" />
+                      <span>SEND CODE</span>
+                      <ArrowRight className="w-6 h-6" />
+                    </span>
                   )}
                 </Button>
 
-                {/* Fallback native button for mobile */}
+                {/* Fallback native button for mobile - EXTRA VISIBLE */}
                 <button
                   onClick={handleSendCode}
                   disabled={loading || !email}
-                  className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold shadow-xl rounded-xl flex items-center justify-center gap-2 transition-all"
+                  className="w-full h-16 text-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-extrabold shadow-2xl rounded-2xl transition-all border-4 border-white"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '1rem',
-                    border: 'none',
+                    padding: '1.5rem',
+                    gap: '12px',
                     cursor: loading || !email ? 'not-allowed' : 'pointer'
                   }}
                 >
                   {loading ? (
-                    <>⏳ Sending...</>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold' }}>⏳ SENDING...</span>
                   ) : (
-                    <>✉️ Send Login Code</>
+                    <>
+                      <Mail className="w-7 h-7" style={{ minWidth: '28px', minHeight: '28px' }} />
+                      <span style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '0.5px' }}>SEND LOGIN CODE</span>
+                    </>
                   )}
                 </button>
               </div>
