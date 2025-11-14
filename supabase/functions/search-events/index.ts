@@ -129,31 +129,35 @@ serve(async (req) => {
       console.log(`⚠️ Filtered out ${agentEvents.length - futureEvents.length} past events`);
     }
 
+    // Add geocoding coordinates for map display
+    console.log('📍 Adding coordinates to events for map display...');
+    const eventsWithCoords = await addCoordinatesToEvents(futureEvents);
+
     // Step 3: Save new events to database
-    if (futureEvents.length > 0) {
-      await saveEventsToDatabase(supabaseClient, futureEvents);
+    if (eventsWithCoords.length > 0) {
+      await saveEventsToDatabase(supabaseClient, eventsWithCoords);
     }
 
     // Step 4: Get user's saved events if authenticated
     let userSavedEventIds: string[] = [];
-    if (user && futureEvents.length > 0) {
-      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, futureEvents.map(e => e.id));
+    if (user && eventsWithCoords.length > 0) {
+      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, eventsWithCoords.map(e => e.id));
     }
 
     // Step 5: Save search history if authenticated
     if (user) {
-      await saveSearchHistory(supabaseClient, user.id, searchData, futureEvents.length, false);
+      await saveSearchHistory(supabaseClient, user.id, searchData, eventsWithCoords.length, false);
     }
 
-    console.log(`✅ Returning ${futureEvents.length} events to client`);
+    console.log(`✅ Returning ${eventsWithCoords.length} events to client`);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          events: futureEvents,
+          events: eventsWithCoords,
           userSavedEventIds,
-          totalResults: futureEvents.length,
+          totalResults: eventsWithCoords.length,
           cached: false,
           source: 'AI Agent Search',
         },
@@ -1037,4 +1041,133 @@ function getEventImage(category: string): string {
     'Knowledge & Business': 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800',
   };
   return imageMap[category] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800';
+}
+
+// =====================================================
+// GEOCODING FOR MAP DISPLAY
+// =====================================================
+
+// Cache for geocoded locations to avoid repeated API calls
+const geocodeCache = new Map<string, { latitude: number; longitude: number } | null>();
+
+async function geocodeLocation(locationName: string): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    // Clean up location name
+    const cleanLocation = locationName.trim();
+
+    // Use Nominatim API (free, no API key required)
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanLocation)}&format=json&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'WhatsUP-Event-Finder/1.0', // Required by Nominatim
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`⚠️ Geocoding failed for "${locationName}": ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const result = data[0];
+      return {
+        latitude: parseFloat(result.lat),
+        longitude: parseFloat(result.lon),
+      };
+    }
+
+    console.warn(`⚠️ No coordinates found for "${locationName}"`);
+    return null;
+  } catch (error) {
+    console.error(`❌ Geocoding error for "${locationName}":`, error);
+    return null;
+  }
+}
+
+async function getCoordinatesForLocation(locationName: string): Promise<{ latitude: number; longitude: number } | null> {
+  // Check cache first
+  if (geocodeCache.has(locationName)) {
+    return geocodeCache.get(locationName) || null;
+  }
+
+  // Geocode and cache result
+  const coords = await geocodeLocation(locationName);
+  geocodeCache.set(locationName, coords);
+
+  // Add small delay to respect Nominatim rate limits (1 request per second)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  return coords;
+}
+
+// Add coordinates to all events
+async function addCoordinatesToEvents(events: any[]): Promise<any[]> {
+  const eventsWithCoords = [];
+
+  for (const event of events) {
+    // Build the best possible address for geocoding
+    // Priority: Full address > Venue + City > City only
+    let locationQuery = event.location;
+
+    if (event.address && event.address !== event.location && event.address !== 'See website' && !event.address.includes('See website')) {
+      // Use full address if available
+      locationQuery = event.address;
+    } else if (event.venue && event.venue !== event.location && !event.venue.includes('Venue') && !event.venue.includes('TBA')) {
+      // Use venue + city for better accuracy
+      locationQuery = `${event.venue}, ${event.location}`;
+    }
+
+    // Try to geocode with the best available address
+    const coords = await getCoordinatesForLocation(locationQuery);
+
+    if (coords) {
+      eventsWithCoords.push({
+        ...event,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      console.log(`✅ Geocoded: "${locationQuery}" → (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`);
+    } else {
+      // Fallback: try just the city if full address failed
+      if (locationQuery !== event.location) {
+        console.log(`⚠️ Trying fallback: ${event.location}`);
+        const fallbackCoords = await getCoordinatesForLocation(event.location);
+
+        if (fallbackCoords) {
+          // Add slight random offset to avoid stacking pins (0.001 degrees ≈ 100 meters)
+          const randomOffsetLat = (Math.random() - 0.5) * 0.01;
+          const randomOffsetLon = (Math.random() - 0.5) * 0.01;
+
+          eventsWithCoords.push({
+            ...event,
+            latitude: fallbackCoords.latitude + randomOffsetLat,
+            longitude: fallbackCoords.longitude + randomOffsetLon,
+          });
+          console.log(`✅ Geocoded (city center + offset): ${event.location} → (${fallbackCoords.latitude.toFixed(4)}, ${fallbackCoords.longitude.toFixed(4)})`);
+        } else {
+          // Keep event but without coordinates
+          eventsWithCoords.push({
+            ...event,
+            latitude: null,
+            longitude: null,
+          });
+          console.warn(`❌ Could not geocode: ${event.location}`);
+        }
+      } else {
+        // Keep event but without coordinates
+        eventsWithCoords.push({
+          ...event,
+          latitude: null,
+          longitude: null,
+        });
+        console.warn(`❌ Could not geocode: ${locationQuery}`);
+      }
+    }
+  }
+
+  return eventsWithCoords;
 }
