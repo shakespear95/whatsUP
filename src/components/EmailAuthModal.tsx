@@ -140,44 +140,29 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
                 </div>
               )}
 
-              {/* Send Code Button - ALWAYS VISIBLE WITH STRONG COLOR */}
-              <button
+              {/* Send Code Button */}
+              <Button
                 onClick={handleSendCode}
                 disabled={loading || !email}
+                className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-lg mt-4"
                 style={{
-                  width: '100%',
-                  height: '80px',
-                  backgroundColor: (!email || loading) ? '#8B5CF6' : '#7C3AED',
-                  color: '#FFFFFF',
-                  fontSize: '22px',
-                  fontWeight: '900',
-                  letterSpacing: '1px',
-                  borderRadius: '16px',
-                  border: '4px solid #6D28D9',
-                  boxShadow: '0 10px 30px rgba(124, 58, 237, 0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  padding: '24px',
-                  cursor: loading || !email ? 'not-allowed' : 'pointer',
-                  opacity: (!email || loading) ? 0.7 : 1,
-                  transition: 'all 0.3s ease',
-                  marginTop: '16px'
+                  backgroundColor: (!email || loading) ? '#9333EA' : '#9333EA',
+                  opacity: (!email || loading) ? 0.5 : 1,
                 }}
               >
                 {loading ? (
-                  <span style={{ fontSize: '22px', fontWeight: '900' }}>
-                    ⏳ SENDING...
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Sending...</span>
                   </span>
                 ) : (
-                  <>
-                    <Mail style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px' }} />
-                    <span>SEND LOGIN CODE</span>
-                    <ArrowRight style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px' }} />
-                  </>
+                  <span className="flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    <span>Send Login Code</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </span>
                 )}
-              </button>
+              </Button>
 
               {/* Info Box */}
               <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
