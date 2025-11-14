@@ -103,7 +103,7 @@ export function EmailAuthModal({ open, onClose, onSuccess }: EmailAuthModalProps
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         {step === 'email' ? (
           <>
             <DialogHeader>
