@@ -117,31 +117,43 @@ serve(async (req) => {
     // Execute agent-based search with Claude orchestration
     const agentEvents = await executeClaudeAgentSearch(searchData);
 
+    // Filter out any past events (safety check)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const futureEvents = agentEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate >= today;
+    });
+
+    if (futureEvents.length < agentEvents.length) {
+      console.log(`⚠️ Filtered out ${agentEvents.length - futureEvents.length} past events`);
+    }
+
     // Step 3: Save new events to database
-    if (agentEvents.length > 0) {
-      await saveEventsToDatabase(supabaseClient, agentEvents);
+    if (futureEvents.length > 0) {
+      await saveEventsToDatabase(supabaseClient, futureEvents);
     }
 
     // Step 4: Get user's saved events if authenticated
     let userSavedEventIds: string[] = [];
-    if (user && agentEvents.length > 0) {
-      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, agentEvents.map(e => e.id));
+    if (user && futureEvents.length > 0) {
+      userSavedEventIds = await getUserSavedEventIds(supabaseClient, user.id, futureEvents.map(e => e.id));
     }
 
     // Step 5: Save search history if authenticated
     if (user) {
-      await saveSearchHistory(supabaseClient, user.id, searchData, agentEvents.length, false);
+      await saveSearchHistory(supabaseClient, user.id, searchData, futureEvents.length, false);
     }
 
-    console.log(`✅ Returning ${agentEvents.length} events to client`);
+    console.log(`✅ Returning ${futureEvents.length} events to client`);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          events: agentEvents,
+          events: futureEvents,
           userSavedEventIds,
-          totalResults: agentEvents.length,
+          totalResults: futureEvents.length,
           cached: false,
           source: 'AI Agent Search',
         },
@@ -264,8 +276,22 @@ async function executeClaudeAgentSearch(searchData: SearchRequest): Promise<any[
     }
   ];
 
+  // Get current date context for Claude
+  const currentDate = new Date();
+  const dateContext = `Today is ${currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })} (${currentDate.toISOString().split('T')[0]})`;
+
   // System prompt that defines Claude's role and behavior
   const systemPrompt = `You are an expert Local Event Discovery Agent with access to powerful search and data extraction tools. Your mission is to find the best, most relevant events based on user criteria.
+
+## IMPORTANT DATE CONTEXT:
+${dateContext}
+
+When searching for events, ONLY find events that occur on or after today's date. Events in the past are NOT valid.
 
 ## Your Capabilities:
 - You can use multiple tools in sequence to gather comprehensive information
@@ -324,13 +350,23 @@ CRITICAL RULES:
 - ONLY the JSON array
 - START your response with [ and END with ]`;
 
+  // Calculate the actual date range for the timeframe
+  const { startDate, endDate } = getDateRange(searchData.timeframe);
+
   // User prompt with search parameters
   const userPrompt = `Find the best ${searchData.activity_type} events in ${searchData.location} for ${searchData.timeframe}.
+
+IMPORTANT DATE REQUIREMENTS:
+- Events must be between ${startDate} and ${endDate}
+- Today's date is ${currentDate.toISOString().split('T')[0]}
+- ONLY search for UPCOMING events, not past events
+- When you see old events (like from June 2024), skip them - they are not valid
+
 ${searchData.keywords ? `Additional keywords: ${searchData.keywords}` : ''}
 ${searchData.radius ? `Within ${searchData.radius}km radius` : ''}
 ${searchData.budget ? `Budget: ${searchData.budget}` : ''}
 
-Use your available tools strategically to find real, current events. Start with weather check if relevant, then use deep search tools to find comprehensive event information.
+Use your available tools strategically to find real, current UPCOMING events. Start with weather check if relevant, then use deep search tools to find comprehensive event information.
 
 TARGET: Return 15-20 high-quality, diverse event recommendations. Use 4-6 tool calls maximum.
 
@@ -592,7 +628,7 @@ async function executePerplexitySearch(input: any, searchData: SearchRequest): P
         messages: [
           {
             role: 'system',
-            content: 'You are a real event finder. Search for actual, current events and return structured data. Aim to find as many relevant events as possible (10-15 per search).'
+            content: `You are a real event finder. Today's date is ${new Date().toISOString().split('T')[0]}. Search for UPCOMING events only (events happening today or in the future). NEVER return past events. Return structured data with 10-15 relevant upcoming events.`
           },
           {
             role: 'user',
