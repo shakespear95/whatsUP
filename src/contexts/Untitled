@@ -1,0 +1,105 @@
+## Repo-Review (Call-Notizen) — konsolidiert & auf Deutsch
+
+## 1) HOHES RISIKO
+
+- `search-events` Edge Function ist faktisch **öffentlich** (CORS `*` + Guest erlaubt), während sie **bezahlte APIs** über Env-Keys nutzt (`supabase/functions/search-events/index.ts`) → Kosten-/Abuse-Risiko.
+- **Public-cost proxy risk**: `supabase/functions/search-events/index.ts` setzt `Access-Control-Allow-Origin: '*'` und erlaubt ausdrücklich unauthentifizierte Searches, nutzt dabei aber serverseitig `ANTHROPIC_API_KEY` (und optional Perplexity/SerpAPI/Firecrawl/OpenWeather/Meta/OpenAI in related code) → kann missbraucht werden, um die Paid-Keys “leerzulaufen”.
+
+#### HIER DIE ERKLÄRUNG DAZU
+Das ist ein **“open paid-API proxy”** Risiko, kein klassisches **“API-key leakage”** Risiko.  
+Die Anthropic/Perplexity/Serp/etc. Keys liegen serverseitig (Deno.env.get(...) in `supabase/functions/search-events/index.ts`), deshalb können Angreifer sie nicht direkt auslesen/stehlen.  
+
+Aber: Wenn `search-events` ohne Auth erreichbar ist und `Access-Control-Allow-Origin: *` zurückgibt (`supabase/functions/search-events/index.ts`), kann jeder die Funktion wiederholt aufrufen und damit serverseitig Kosten verursachen.
+
+**Wie das praktisch ausgenutzt wird**
+- Ein Angreifer ruft die Edge Function direkt auf (nicht über das UI). Selbst wenn das UI Guests blockt (`src/lib/supabase.ts` wirft ohne Session Token), ist das nur Client-Logik.
+- Er nutzt den Supabase anon key (öffentlich by design; kommt im Frontend via `VITE_SUPABASE_ANON_KEY` in `src/lib/supabase.ts`) und spammt `POST /functions/v1/search-events`.
+- Er erzeugt bewusst Cache-Misses (random Locations/Keywords/Timeframes/Categories), sodass die Function immer wieder Claude/Tool-Calls macht statt cached DB-Resultate zu liefern (`supabase/functions/search-events/index.ts`).
+- Das läuft über Scripts/Bots (curl, Node, etc.). CORS ist kein Schutz; es betrifft nur Browser. `Access-Control-Allow-Origin: *` macht Browser-Abuse sogar einfacher.
+
+**Ergebnis**: Kostenexplosion + potenzielle Downtime (Rate Limits/Timeouts), obwohl niemand die API Keys “sieht”.
+
+---
+
+### HARD CODED CONFIG — webhooks/URLs/IDs (mit Beispielen)
+- **Supabase project IDs hardcoded**:
+  - `supabase/config.toml`: `project_id = "ozezwaqtumofuybazrvo"`
+  - `package.json`: `supabase:link` nutzt `--project-ref ozezwaqtumofuybazrvo`
+  - `deploy-search-events.bat`: deploy nutzt `--project-ref ozezwaqtumofuybazkvo` (**Mismatch**)
+- **Edge Function vendor endpoints hardcoded** (core search hängt davon ab):
+  - `supabase/functions/search-events/index.ts`: `https://api.anthropic.com/v1/messages`, `https://api.perplexity.ai/chat/completions`, `https://serpapi.com/search.json`, `https://api.firecrawl.dev/v1/scrape`, `https://api.openweathermap.org/...`, `https://graph.facebook.com/v18.0/...`, `https://nominatim.openstreetmap.org/search` (plus Unsplash image URLs).
+  - `supabase/functions/search-events-agent/index.ts`: `https://api.openai.com/v1/chat/completions` + SerpAPI/Perplexity/OpenWeather endpoints.
+
+#### ZUSATZERKLÄRUNG
+Die hardcoded Vendor-Endpoints (Anthropic/Perplexity/SerpAPI URLs) sind **an sich kein Secret** und geben Angreifern **keine neue Capability**. Der Missbrauchsvektor bleibt: die Function ist öffentlich erreichbar und “verbrät” dabei serverseitige Paid-Keys.
+
+Die Endpoints sind nur insofern relevant, als sie verraten/confirmen, welche Paid-Provider hinter dem Proxy stehen — aber ohne Keys kann man die Provider nicht direkt missbrauchen.
+
+**WAS MACHT ES EINFACHER FÜR ANGREIFER?**
+- Unauthenticated access + CORS `*` in `supabase/functions/search-events/index.ts` macht den Aufruf von überall trivial (und CORS stoppt non-browser Clients sowieso nicht).
+- Hardcoded Supabase project refs/IDs (`supabase/config.toml`, `package.json`, `deploy-search-events.bat`) macht das “Targeting” etwas leichter, aber praktisch ist das sekundär, weil das deployed Frontend ohnehin Supabase URL/anon key exposed.
+
+---
+
+## 2) SECURITY ISSUE
+
+- **Debug surface shipped to users**: `src/utils/authDebug.ts` hängt `window.authDebug` an und loggt Auth/User Details; wird unconditionally in `src/main.tsx` importiert.
+
+Das ist grundsätzlich kein klarer DSGVO-Verstoß, bewegt sich aber in einer Grauzone. Konkret werden personenbezogene, identifizierbare Informationen – also E-Mail-Adresse und User-ID – in der Browser-Konsole offengelegt. Das passiert bei jedem Login und bei jeder Session-Änderung.
+
+Diese Daten sind für jeden zugänglich, der Zugriff auf das Gerät oder die Session des Users hat. Beispiele dafür sind geteilte Computer, Screen-Recordings, Remote-Support-Tools oder bösartige Browser-Erweiterungen. Das kann dazu führen, dass Screenshots erstellt werden, auf denen persönliche Informationen sichtbar sind, die dann für jede Person einsehbar sind, die Zugang zu diesen Aufnahmen hat.
+
+Das erhöht das Risiko deutlich und ist weit von Best Practices im Umgang mit personenbezogenen Daten entfernt.
+
+LOÖSUNG: PRINTS UNBEDINGT ENTFERNEN -> CONSOLE.LOG LINES ENTFERNEN AUS HOOKS/USEAUTH.tsx
+
+---
+
+## 3) Weitere Issues (CODE GESUNDHEIT)
+
+- Tooling gap: repo hat **kein ESLint**.
+- Viel Dead Code: Komponenten und unused API wrappers (z.B. `src/components/StartScreen.tsx`, `src/components/SimpleStartScreen.tsx`, `src/components/NavigationHeader.tsx`, `src/components/SearchSessionManager.tsx`, und `saveEvent()/unsaveEvent()/getMyEvents()` in `src/lib/supabase.ts` haben keine Call Sites).
+- UI/component surface ist groß (62 TSX Komponenten, 46 shadcn/ui primitives).
+
+---
+
+## 4) Docs vs Code — alignment verdict + mismatches
+
+**Verdict**: **Partially aligned** (einige Beschreibungen passen, aber mehrere kritische “how-to” Punkte sind outdated/widersprüchlich).
+
+- **Docs sagen “works without API keys (mock data)”; Code sagt “real search only”**: `QUICKSTART.md` vs `src/App.tsx` (“No mock events”) + `supabase/functions/search-events/index.ts` requires `ANTHROPIC_API_KEY`.
+- **Supabase project-ref mismatch**: Docs/Scripts nutzen `...bazkvo` (`DEPLOY_NOW.md`, `AUTHENTICATION_GUIDE.md`, `deploy-search-events.bat`) vs Code/Config `...bazrvo` (`supabase/config.toml`, `package.json`).
+
+---
+
+## 5) DB/SQL Setup ISSUE
+
+- **Inkonsistenzen / mehrere Sources of Truth**:
+  - `CREATE_TABLES.sql` dupliziert `supabase/migrations/001_initial_schema.sql` → zwei Quellen für das baseline Schema.
+  - `CREATE_TABLES.sql` enthält **kein** `user_profiles`, aber die App braucht es (`src/lib/supabase.ts`, `src/pages/UserProfile.tsx`).
+
+... ensure all required tables exist via migrations, and align Edge Function behavior with RLS (either require auth for caching writes, or use service-role server-side with explicit rate limiting).
+
+---
+
+## Repair vs Reset
+
+##### HIER DIE MEINUNG VON KI:
+**Repair vs reset**: **Repairable**—main issue is missing quality gates, not pervasive compile errors. Add `typescript`, add ESLint, enforce `tsc --noEmit` + lint in CI, then fix surfaced issues.
+
+NOCHMAL AUSFÜRLICHER  
+**Sanitize (repairable)**. The repo is small and has a coherent core loop (search → list/map), but it needs focused stabilization: lock down the public search Edge Function (auth/origin allowlist/rate limits), resolve Supabase project-ref inconsistencies, add `typescript` + ESLint + CI checks, remove dead/duplicate components, and wire persistence for saved events/search history. A rewrite would mainly re-create existing UI and Supabase integration while leaving the same security/tooling decisions unresolved.
+
+##### HIER IST MEINE MEINUNG
+Meine Meinung ist klar: Ich würde dieses ganze Projekt noch einmal von Grund auf vernünftig aufsetzen. Im aktuellen Zustand ist viel Chaos drin, und der Umfang ist inzwischen so groß, dass man ihn kaum noch überblicken kann. Allein die Menge an Dokumentation kann man als Mensch nicht mehr komplett durchlesen.
+
+Wir sind jetzt an einem Punkt, an dem sich sehr viel Dead Code angesammelt hat und die Dokumentation nicht mehr mit dem übereinstimmt, was tatsächlich implementiert ist. Um da wieder durchzusteigen, müsste man wochenlang nur lesen.
+
+Deshalb würde ich neu anfangen:
+- mit einer klaren Project-Idea,
+- einem sauberen Dev-Brief,
+- einem definierten User-Flow.
+
+Daraus würde ich drei, vier wirklich gute, umfangreiche, konkrete Dokumente erstellen, die gezielt den Tech-Stack festlegen und – das ist das Wichtigste – ganz klar auf das MVP eingehen. Das ist eine der wichtigsten Constraints, die eine KI braucht, zum Beispiel bei Tools wie Cloud Code: eindeutig definiert zu haben, was das MVP ist und worauf wir hinarbeiten.
+
+Die KI ist nicht schlecht im Programmieren, im Gegenteil: Sie ist schnell und gut – und genau deshalb interpretiert sie ständig Dinge hinein, ergänzt Features und fügt zusätzlichen Kram hinzu. Das führt zu jeder Menge Dead Code. Dann versucht man, mit immer mehr Dokus hinterherzukommen, und am Ende gerät alles komplett außer Kontrolle.
